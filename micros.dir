@@ -1,0 +1,12 @@
+epiLife++ (main)                                               |elpp.h
+                                                               |elpp.cpp
+- elMundo (the World)                                          |elmundo.h
+                                                        generic|elmundo.cpp
+                                                        A(rray)|elmundo-a.cpp
+- elVista (the View)                                           |elvista.h
+                                                               |elvista.cpp
+Makefile                                                       |Makefile
+                                                               |LICENSE
+---------------------------------------------------------------|----------------
+epiLife.java                                                   |epiLife.java
+                                                               |race.rle
