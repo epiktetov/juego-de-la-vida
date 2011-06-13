@@ -1,245 +1,215 @@
-static char const rcsid[] = "$Id: $";
-/*
- * epiLife++ elVista (the View) is responsible for visual representation
- *
- * Viewer/editor/etc for Conway's Game of Life (in full color)
- * Copyright 2002 by Michael Epiktetov, epi@ieee.org
- *
- *-----------------------------------------------------------------------------
- *
- * $Log: $
- *
- */
-#include <stdio.h>
-#include <gdk/gdk.h>
-#include <gtk/gtkwidget.h>
-#include "elpp.h"
+//------------------------------------------------------+----------------------
+// juego de la vida       el Vista (the View) code      | (c) Epi MG, 2002,2011
+//------------------------------------------------------+----------------------
+#include <QtGui> // elVista (the View) is responsible for visual representation
+
+#include "jdlv.h"
 #include "elvista.h"
 #include "elmundo.h"
-
-elVista::elVista (elMundo *em, GtkWidget *gw)
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+elVista::elVista (jdlvFrame *father, elMundo *lookingAtWorld)
+                       : dad(father),   world(lookingAtWorld),
+                           pt(0), pixmap(NULL) //ptNext(false)
 { 
-  world = em;                drawingArea = gw;
+  setAttribute(Qt::WA_OpaquePaintEvent);
+//  setAttribute(Qt::WA_PaintOnScreen);
+//  setAttribute(Qt::WA_NoSystemBackground);
+
   mag = pixels_per_cell = cells_per_pixel = 1;
   xOffset = yOffset = 0;
   x_center = y_center = 0;
-
-  int width  = get_width(),  xmin = -width/2,
-      height = get_height(), ymin = -height/2;
-
-  world->setFrame(xmin, xmin+width-1, ymin, ymin+height-1);
-  resize(0, -xmin, -ymin);
 }
-elVista::~elVista() {}
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-typedef struct { const char *name; // color name (just for diagnostic)
-                 GdkColor   color; // definition of color (pixel/r/g/b)
-                 GdkGC        *gc; // graphic context
-} elColorTable;
-
-static elColorTable visColors[] =
+elVista::~elVista() { if (pixmap) delete pixmap; }
+/*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
+static  QColor visColors[elvcMax]; /* indexed by elVisColor enum, see jdlv.h */
+void elVista::initColors(void)
 {
-  { "Grey",        { 0, 0xAAAA, 0xAAAA, 0xAAAA }, 0 },
-  { "Blue",        { 0, 0x0000, 0x0000, 0xFFFF }, 0 },
-  { "Green",       { 0, 0x0000, 0xFFFF, 0x0000 }, 0 },
-  { "Cyan",        { 0, 0x0000, 0xFFFF, 0xFFFF }, 0 },
-  { "Red",         { 0, 0xFFFF, 0x0000, 0x0000 }, 0 },
-  { "Magenta",     { 0, 0xFFFF, 0x0000, 0xFFFF }, 0 },
-  { "Yellow",      { 0, 0xFFFF, 0xFFFF, 0x0000 }, 0 },
-  { "White",       { 0, 0xFFFF, 0xFFFF, 0xFFFF }, 0 },
-
-  { "DarkGrey",    { 0, 0x3333, 0x3333, 0x3333 }, 0 },
-  { "DarkBlue",    { 0, 0x0000, 0x0000, 0x5555 }, 0 },
-  { "DarkGreen",   { 0, 0x0000, 0x5555, 0x0000 }, 0 },
-  { "DarkRed",     { 0, 0x0000, 0x5555, 0x5555 }, 0 },
-  { "DarkCyan",    { 0, 0x5555, 0x0000, 0x0000 }, 0 },
-  { "DarkMagenta", { 0, 0x5555, 0x0000, 0x5555 }, 0 },
-  { "DarkYellow",  { 0, 0x5555, 0x5555, 0x0000 }, 0 },
-  { "DarkWhite",   { 0, 0x5555, 0x5555, 0x5555 }, 0 },
-
-  { "Background",  { 0, 0x0000, 0x0000, 0x2000 }, 0 },
-  { "Grid",        { 0, 0x0000, 0x3000, 0x3000 }, 0 }
-};
-
-int elVista::initColorTable (GdkDrawable *win)
+  visColors[0].setHsvF(  0.0/360,0.0,  0.0); // ... black
+  visColors[1].setHsvF(240.0/360,1.0,  0.6); // ..B blue
+  visColors[2].setHsvF(120.0/360,1.0,  0.6); // .G. green
+  visColors[3].setHsvF(180.0/360,1.0,  0.5); // .GB cyan
+  visColors[4].setHsvF(  0.0/360,1.0,  0.6); // R.. red
+  visColors[5].setHsvF(300.0/360,1.0,  0.6); // R.B magenta
+  visColors[6].setHsvF( 60.0/360,1.0,  0.5); // RG. yellow
+  visColors[7].setHsvF(  0.0/360,1.0,  1.0); // xxx not used
+  visColors[8].setHsvF(200.0/360,0.333,1.0); // dead black cell
+  for (int i = 1; i < elcMax; i++) {
+    qreal H,S,V;
+    visColors[i].getHsvF(&H,&S,&V);
+//+
+//    fprintf(stderr, "%d:H=%.3f,S=%.3f,V=%.3f,#%02x%02x%02x\n", i, H,S,V,
+//            visColors[i].red(), visColors[i].green(), visColors[i].blue());
+    visColors[i+elcvDead].setHsvF(H, 0.333, 1.0);
+  }
+  visColors[elvcBackground].setHsvF(200.0/360,0.2,1.0);
+  visColors[elvcGrid] = QColor("white");
+}
+//-----------------------------------------------------------------------------
+void elVista::observe (int x_abs, int y_abs, int color)
 {
-  GdkColormap *cmap = gdk_colormap_get_system();
-  int i, error = 0;
-  for (i = 0; i < TableSIZE(visColors); i++) {
-    if (gdk_color_alloc(cmap, &visColors[i].color)) {
-      visColors[i].gc = gdk_gc_new(win);
-      gdk_gc_set_foreground(visColors[i].gc, &visColors[i].color);
+  int x_vis = Xabs2vis(x_abs), y_vis = Yabs2vis(y_abs);
+  if (pt) {
+    QBrush brush(visColors[color], Qt::SolidPattern);
+    pt->setBrush(brush);        QPen pen(brush, 1.0);
+    pt->setPen(pen);
+    pt->drawRect(x_vis, y_vis, cell_size, cell_size);
+} }
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elVista::show_next_gen()
+{
+  QPainter dc(pixmap);         pt = &dc;
+  world->nextGeneration(this); pt = NULL; update();
+}
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elVista::makePixmap (int xmin, int ymin, int w, int h)
+{
+//+
+//fprintf(stderr, "pixmap:x=%d,y=%d,%dx%d,mag=%d\n", xmin, ymin, w, h, mag);
+//-
+  QRect rect = this->rect();  if (pixmap) delete pixmap;
+  pixmap = new QPixmap(rect.size());
+  QPainter dc(pixmap);                                  dc.setPen(Qt::NoPen);
+  QBrush B(visColors[elvcBackground],Qt::SolidPattern); dc.setBrush(B);
+  dc.drawRect(rect);
+  if (pixels_per_cell > 7) {
+    dc.setPen(QPen(QColor(visColors[elvcGrid])));
+    int i, p;
+    for (i = world->XvMin; i <= world->XvMax+1; i++) {
+      p = Xabs2vis(i)-1;
+      dc.drawLine(p, rect.top(), p, rect.bottom());
     }
-    else {
-      fprintf(stderr, "ERROR: cannot allocate '%s' (%x;%d,%d,%d)\n",
-              visColors[i].name,
-              visColors[i].color.pixel, visColors[i].color.red,
-              visColors[i].color.blue,  visColors[i].color.green); error++;
+    for (i = world->YvMin; i <= world->YvMax+1; i++) {
+      p = Yabs2vis(i)-1;
+      dc.drawLine(rect.left(), p, rect.right(), p);
   } }
-  return error;
+  world->setFrame   (xmin, xmin+w-1, ymin, ymin+h-1); pt = &dc;
+  world->show(*this, xmin, xmin+w-1, ymin, ymin+h-1); pt = NULL;
+  dad->UpdateMag();
 }
-/*---------------------------------------------------------------------------*/
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+int elVista::Xvis2abs (int x_vis)
+{ 
+  return cells_per_pixel*(x_vis-xOffset)/pixels_per_cell + world->XvMin;
+}
+int elVista::Yvis2abs (int y_vis)
+{ 
+  return cells_per_pixel*(y_vis-yOffset)/pixels_per_cell + world->YvMin;
+}
+int elVista::Xabs2vis (int x_abs)
+{ 
+  return pixels_per_cell*(x_abs - world->XvMin)/cells_per_pixel + xOffset;
+}
+int elVista::Yabs2vis (int y_abs)
+{ 
+  return pixels_per_cell*(y_abs - world->YvMin)/cells_per_pixel + yOffset;
+}
+//-----------------------------------------------------------------------------
 static int magnifications[] = { -64, -32, -16, -8, -4, -2, -1,
                                                     1,  2,  3, 5, 8, 12, 20 };
 static int getClosestMag (int target, int dir)
 {                                      // dir > 0 means round up
   int i;                               // dir < 0 means round down
-
   if (dir > 0) {
     for (i = 0; i < TableSIZE(magnifications); i++)
       if (magnifications[i] >= target) return magnifications[i];
     //
     // Nothing appropriate found - return the maximum possible value:
     //
-    return magnifications[TableSIZE(magnifications) - 1];
+    return magnifications[TableSIZE(magnifications)-1];
   }
   else {
     for (i = TableSIZE(magnifications); i--; )
       if (magnifications[i] <= target) return magnifications[i];
     /* else return minimum value: */   return magnifications[0];
 } }
-static int getRequiredMag (int abs, int vis)
+inline int getRequiredMag (int abs, int vis)
 {
   if (abs < vis) return vis/abs;
   else        return -abs/vis-1;
 }
-void elVista::adjust_mag_parameters (int &w_abs, int &h_abs)
+void elVista::adjust_mag_params (int &w_abs, int &h_abs)
 {
   if (mag > 0) {
-    pixels_per_cell = mag; w_abs = get_width()/mag;  h_abs = get_height()/mag;
+    pixels_per_cell = mag; w_abs = width()/mag;  h_abs = height()/mag;
     cells_per_pixel = 1; 
-    xOffset = (get_width()  - w_abs*mag)/2; // distribute extra
-    yOffset = (get_height() - h_abs*mag)/2; // pixels evenly
+    xOffset = (width()  - w_abs*mag)/2; // distribute extra
+    yOffset = (height() - h_abs*mag)/2; // pixels evenly
   }
   else {
     xOffset = yOffset = 0; // no unused pixels in this case
     pixels_per_cell = 1;
-    cells_per_pixel = -mag; w_abs = -get_width() *mag;
-                            h_abs = -get_height()*mag;
+    cells_per_pixel = -mag; w_abs = -width() *mag;
+                            h_abs = -height()*mag;
   }
-  cell_size = (pixels_per_cell > 4) ? pixels_per_cell-1 : pixels_per_cell;
+  cell_size = (pixels_per_cell >  4) ? pixels_per_cell-2 :
+              (pixels_per_cell >  1) ? pixels_per_cell-1 : 1;
 }
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-int elVista::resize (int delta_mag,
-                     int x_fix_vis, int y_fix_vis) // fixed point
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elVista::resizeVista (int delta_mag,
+                           int x_fix_vis, int y_fix_vis) // fixed point
 {
-  int x_fix = Xvis2abs(x_fix_vis), w,
-      y_fix = Yvis2abs(y_fix_vis), h, old_mag = mag;
-#if 0
-  printf("resize(%d;%d,%d) fix_abs=%d,%d", delta_mag, x_fix_vis,
-                                                      y_fix_vis, x_fix, y_fix);
-#endif
-  mag = getClosestMag(mag+delta_mag, delta_mag);
-  adjust_mag_parameters(w, h);
-
+  int w, h, x_fix = Xvis2abs(x_fix_vis), y_fix = Yvis2abs(y_fix_vis);
+  mag = getClosestMag(mag+delta_mag, delta_mag);   adjust_mag_params(w, h);
   int xmin = x_fix - cells_per_pixel*(x_fix_vis - xOffset)/pixels_per_cell,
       ymin = y_fix - cells_per_pixel*(y_fix_vis - yOffset)/pixels_per_cell;
-
   x_center = xmin + w/2;
-  y_center = ymin + h/2;
-#if 0
-  printf(" x/ymin=%d/%d size=%dx%d\n", xmin, ymin, width, height);
-#endif
-  world->setFrame(xmin, xmin+w-1, ymin, ymin+h-1);
-
-  return (mag == old_mag) ? 0 : delta_mag;
+  y_center = ymin + h/2; makePixmap(xmin, ymin, w, h);
 }
-int elVista::resize (int delta_mag)
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elVista::resizeVista (int delta_mag)
 { 
-  int w, h, old_mag = mag;
-
-  mag = getClosestMag(mag+delta_mag, delta_mag);
-  adjust_mag_parameters(w, h);
-
+  int w, h;
+  mag = getClosestMag(mag+delta_mag, delta_mag); adjust_mag_params(w, h);
   int xmin = x_center - w/2,
-      ymin = y_center - h/2;
-
-  world->setFrame(xmin, xmin+w-1, ymin, ymin+h-1);
-
-  return (mag == old_mag) ? 0 : delta_mag;
+      ymin = y_center - h/2; makePixmap(xmin, ymin, w, h);
 }
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 void elVista::resize_to_fit (void)
 {
-  int xmin, xmax, ymin, ymax;      world->getFitFrame(xmin, xmax, ymin, ymax);
-  int mag_by_w = getRequiredMag(xmax-xmin+1, get_width()),
-      mag_by_h = getRequiredMag(ymax-ymin+1, get_height());
-
-  center((xmin+xmax)/2, (ymin+ymax)/2);
-
-  if (mag_by_w < mag_by_h) resize(mag_by_w-mag);
-  else                     resize(mag_by_h-mag);
+  int                xmin, xmax, ymin, ymax;
+  world->getFitFrame(xmin, xmax, ymin, ymax);
+//+
+//fprintf(stderr, "World:x=%d-%d,y=%d-%d(size:%dx%d)\n",
+//                      xmin, xmax, ymin, ymax, width(), height());
+//-
+  int mag_by_w = getRequiredMag(xmax-xmin+1, width()),
+      mag_by_h = getRequiredMag(ymax-ymin+1, height());
+  if (mag_by_w > 1) mag_by_w = getRequiredMag(5*(xmax-xmin+1)/4, width());
+  if (mag_by_h > 1) mag_by_h = getRequiredMag(5*(ymax-ymin+1)/4, height());
+  if (mag_by_w > 8) mag_by_w = 8;                 x_center = (xmin+xmax)/2;
+  if (mag_by_h > 8) mag_by_h = 8;                 y_center = (ymin+ymax)/2;
+  if (mag_by_w < mag_by_h) resizeVista(mag_by_w - mag);
+  else                     resizeVista(mag_by_h - mag);  update();
 }
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-void elVista::center (int x_abs, int y_abs)
+void elVista::resizeEvent (QResizeEvent*) { resizeVista(); }
+//-----------------------------------------------------------------------------
+void elVista::paintEvent (QPaintEvent*)
 {
-  x_center = x_abs;
-  y_center = y_abs; resize();
+  QPainter dc(this); dc.drawPixmap(0,0,*pixmap);
 }
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-inline int elVista::Xvis2abs (int x_vis) 
-{ 
-  return cells_per_pixel*(x_vis-xOffset)/pixels_per_cell + world->XvMin;
-}
-inline int elVista::Yvis2abs (int y_vis) 
-{ 
-  return cells_per_pixel*(y_vis-yOffset)/pixels_per_cell + world->YvMin;
-}
-inline int elVista::Xabs2vis (int x_abs) 
-{ 
-  return pixels_per_cell*(x_abs - world->XvMin)/cells_per_pixel + xOffset;
-}
-inline int elVista::Yabs2vis (int y_abs) 
-{ 
-  return pixels_per_cell*(y_abs - world->YvMin)/cells_per_pixel + yOffset;
-}
-/*---------------------------------------------------------------------------*/
-void elVista::clear (void)
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elVista::mousePressEvent (QMouseEvent *ev)
 {
-  clear(0, 0, drawingArea->allocation.width, drawingArea->allocation.height);
-}
-void elVista::clear (int x_vis, int y_vis, int width, int height)
+  switch (ev->type()) {
+  case QEvent::MouseButtonPress: break;
+  case QEvent::MouseButtonDblClick:
+    x_center = Xvis2abs(ev->x());
+    y_center = Yvis2abs(ev->y()); resizeVista(); update(); ev->accept();
+  default:
+    break;
+} }
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elVista::wheelEvent (QWheelEvent *ev)
 {
-  gdk_draw_rectangle(drawingArea->window,
-            visColors[elvcBackground].gc, true, x_vis, y_vis,
-                                                width, height);
-  if (pixels_per_cell > 7) {
-    int i, p;
-    for (i = world->XvMin; i <= world->XvMax+1; i++) {
-      p = Xabs2vis(i)-1;
-      gdk_draw_line(drawingArea->window, visColors[elvcGrid].gc,
-                    p, 0,
-                    p, drawingArea->allocation.height-1);
-    }
-    for (i = world->YvMin; i <= world->YvMax+1; i++) {
-      p = Yabs2vis(i)-1;
-      gdk_draw_line(drawingArea->window, visColors[elvcGrid].gc,
-                    0,                               p,
-                    drawingArea->allocation.width-1, p);
-  } }
-}
-void elVista::update (void)
-{
-  clear(); world->show(*this, world->XvMin, world->XvMax, 
-                              world->YvMin, world->YvMax);
-}
-void elVista::update (int x_vis, int y_vis, int width, int height)
-{
-  clear(x_vis, y_vis, width, height);
-  world->show(*this, Xvis2abs(x_vis), Xvis2abs(x_vis+width -1),
-                     Yvis2abs(y_vis), Yvis2abs(y_vis+height-1));
-}
-/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-void elVista::paint (int x_vis, int y_vis, int color)
-{
-  if (pixels_per_cell == 1) gdk_draw_point(drawingArea->window,
-                                           visColors[color].gc, x_vis, y_vis);
-  else
-    gdk_draw_rectangle(drawingArea->window,
-          visColors[color].gc, true, x_vis, y_vis, cell_size, cell_size);
-}
-void elVista::observe (int x_abs, int y_abs, int color)
-{
-  paint(Xabs2vis(x_abs), Yabs2vis(y_abs), color);
-}
-
+  if (ev->modifiers() & (Qt::MetaModifier|Qt::ControlModifier)) {
+    resizeVista(ev->delta() > 0 ? +1 : -1, ev->x(), ev->y());
+    update();
+  }
+  else {
+    int delta = -ev->delta()/2;
+    if (ev->orientation() == Qt::Vertical)
+         y_center = Yvis2abs(Yabs2vis(y_center)+delta);
+    else x_center = Xvis2abs(Xabs2vis(x_center)+delta);
+    resizeVista();                            update();
+} }
+//-----------------------------------------------------------------------------

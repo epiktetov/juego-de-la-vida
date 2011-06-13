@@ -1,18 +1,9 @@
-static char const rcsid[] = "$Id: $";
-/*
- * epiLife++ elMundo-A (the World type A) implemented with Arrays
- *
- * Viewer/editor/etc for Conway's Game of Life (in full color)
- * Copyright 2002 by Michael Epiktetov, epi@ieee.org
- *
- *-----------------------------------------------------------------------------
- *
- * $Log: $
- *
- */
-#include <stdio.h>
-#include <string.h>
-#include "elpp.h"
+//------------------------------------------------------+----------------------
+// juego de la vida   el Mundo (the World type A) code  | (c) Epi MG, 2002,2011
+//------------------------------------------------------+----------------------
+#include <stdio.h>     // elMundo-A (the World type A) implemented with Arrays
+#include <string.h>    // (the code was converted from epiLife.java applet 2.3
+#include "jdlv.h"      //  copyright 1999,2002 by Michael Epiktetov == Epi MG)
 #include "elmundo.h"
 #include "elvista.h"
 
@@ -82,39 +73,31 @@ class elMundoA : public elMundo
   static const int both_die             = 8; /* right_dies = 02(3)       */
 
 public:
-  void setRules(const char *ruleString)
+  void setRules(int born_bit_mask, int stay_bit_mask)
   {
-    int i, j, k;
-
+    int i,k;
     for (i = 0; i <= 0x3fc; i += 4) { 
-      rules[i+0] = no_action;  /* if not specifed explicitly, no action  */
-      rules[i+1] = right_dies; /* required for empty cell and all living */
-      rules[i+2] = left_dies;  /* cells are going to die (it's a harsh   */
-      rules[i+3] = both_die;   /* world, baby :)                         */
-    }
-    if (!ruleString || (ruleString[0] != 'b'
-                    &&  ruleString[0] != 'B')) ruleString = "b3s23";
-    printf("setRules(%s)\n", ruleString);
-
-    for (j = 1; j < strlen(ruleString) && ruleString[j] != 's'
-                                       && ruleString[j] != 'S'; j++) {
-      if ((k = ruleString[j] - '0') < 1 ||
-                                  k > 8) break;
-      for (i = 0; i < 9; i++) {                /* cell will be born is empty */
-        rules[(k<<6)+(i<<2)+0] += left_born;   /* position has exactly given */
-        rules[(k<<6)+(i<<2)+1] += left_born;   /* number of alive neighbors  */
-        rules[(i<<6)+(k<<2)+0] += right_born;  /* (anything else doesn't     */
-        rules[(i<<6)+(k<<2)+2] += right_born;  /*                    matter) */
-    } }
-    for (j++; j < strlen(ruleString); j++) {
-      if ((k = ruleString[j] - '0') < 1 ||
-                                  k > 8) break;
-      for (i = 0; i < 9; i++) {                /* have to clear "death" bits */
-        rules[(k<<6)+(i<<2)+2] -= left_dies;   /* (which were already set to */
-        rules[(k<<6)+(i<<2)+3] -= left_dies;   /* all elements) for those    */
-        rules[(i<<6)+(k<<2)+1] -= right_dies;  /* combination that should    */
-        rules[(i<<6)+(k<<2)+3] -= right_dies;  /* be preserved               */
-    } }
+      rules[i+0] = no_action;
+      rules[i+1] = right_dies; /* if not specifed explicitly, no actions */
+      rules[i+2] = left_dies;  /* required for empty cell and all living */
+      rules[i+3] = both_die;   /* cells are going to die (will clear the */
+    }                          /* "death" bit for specified rules later) */
+    for (k = 1; k < 9; k++) {
+      if ((born_bit_mask & (1 << k)) == 0) continue;
+      for (i = 0; i < 9; i++) {
+        rules[(k<<6)+(i<<2)+0] += left_born;   /* cell will be born is empty */
+        rules[(k<<6)+(i<<2)+1] += left_born;   /* position has exactly given */
+        rules[(i<<6)+(k<<2)+0] += right_born;  /* number of alive neighbors  */
+        rules[(i<<6)+(k<<2)+2] += right_born;  /* (anything else doesn't     */
+    } }                                        /*                    matter) */
+    for (k = 1; k < 9; k++) {
+      if ((stay_bit_mask & (1 << k)) == 0) continue;
+      for (i = 0; i < 9; i++) {
+        rules[(k<<6)+(i<<2)+2] -= left_dies;   /* have to clear "death" bits */
+        rules[(k<<6)+(i<<2)+3] -= left_dies;   /* (which were already set to */
+        rules[(i<<6)+(k<<2)+1] -= right_dies;  /* all elements) for the rule */
+        rules[(i<<6)+(k<<2)+3] -= right_dies;  /* explcitly specified in 'S' */
+    } }                                        /* string of the rule set     */
   }
 private:
   static int const left_rxgxb_mask   = 0x3f000000;  /* Birth of each cells   */
@@ -164,8 +147,7 @@ public:
 
       Uleft_incr [i] = right_incr[i] + leftVALUE(i);
       Uright_incr[i] = left_incr[i] + rightVALUE(i);
-    }
-  } 
+  } }
 private:                         /*     +-------+-------+     */
   int Nsize, Nlen, *Npos, *Nval, /*     ! N(-1) ! N(+1) !     */
                                  /* +---+---+---+---+---+---+ */
@@ -183,29 +165,29 @@ private:                         /*     +-------+-------+     */
   static void adjustSize(int &Xsize, int *&Xpos, int *&Xval, int reqLen)
   {
     if (Xsize < reqLen) { 
-      Xpos = (int *)realloc(Xpos, reqLen*sizeof(int));
-      Xval = (int *)realloc(Xval, reqLen*sizeof(int)); Xsize = reqLen;
+      if (Xsize) { Xpos = (int *)realloc(Xpos, reqLen*sizeof(int));
+                   Xval = (int *)realloc(Xval, reqLen*sizeof(int)); }
+      else {
+        Xpos = MALLOCxN(int, reqLen);
+        Xval = MALLOCxN(int, reqLen); } Xsize = reqLen;
   } }
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 public: 
   elMundoA()
   {
-    Usize = 64; Upos = MALLOCxN(int, 64); Uval = MALLOCxN(int, 64); Ulen = 0;
-    Nsize = 64; Npos = MALLOCxN(int, 64); Nval = MALLOCxN(int, 64); Nlen = 0;
-    Wsize = 64; Wpos = MALLOCxN(int, 64); Wval = MALLOCxN(int, 64); Wlen = 0;
-    Esize = 64; Epos = MALLOCxN(int, 64); Eval = MALLOCxN(int, 64); Elen = 0;
-    Ssize = 64; Spos = MALLOCxN(int, 64); Sval = MALLOCxN(int, 64); Slen = 0;
-    Msize = 64; Mpos = MALLOCxN(int, 64); Mval = MALLOCxN(int, 64); Mlen = 0;
-    setRules(NULL);
-    setColorRules(NULL); finalized = 0;
+    Usize = 64; Upos = MALLOCxN(int, Usize); Nsize = Nlen = 0;
+    Ulen  =  0; Uval = MALLOCxN(int, Usize); Wsize = Wlen = 0;
+                                             Esize = Elen = 0;
+    setRules(0x8,0xC);                       Ssize = Slen = 0;
+    setColorRules(NULL);   finalized = 0;    Msize = Mlen = 0;
   }
   ~elMundoA()
-  {
-    free(Upos); free(Uval); free(Npos); free(Nval);
-    free(Wpos); free(Wval); free(Epos); free(Eval);
-    free(Spos); free(Sval); free(Mpos); free(Mval);
+  {             if (Nsize) { free(Npos); free(Nval); }
+    free(Upos); if (Wsize) { free(Wpos); free(Wval); }
+    free(Uval); if (Esize) { free(Epos); free(Eval); }
+                if (Ssize) { free(Spos); free(Sval); }
+                if (Msize) { free(Mpos); free(Mval); }
   }
-
 /*---------------------------------------------------------------------------*/
 private:
   int start_pos, end_pos, offsetX,
@@ -230,7 +212,6 @@ private:
       int x = X(pos);
       if (XvMin <= x && x <= XvMax) V->observe(x, Y(pos), clr+elcvDead);
   } }
-
 /*---------------------------------------------------------------------------*/
                     /* Update neighbor counters and generates N, W, E arrays */
   void passZero()   /* for initial configuration stored in Upos/val arrays   */
@@ -261,8 +242,7 @@ private:
         }
         Uval[i] += Uincr; Npos[Nlen] = pos + Nshift;     Nval[Nlen++] = NvalL;
                           Npos[Nlen] = pos + NshiftPlus; Nval[Nlen++] = NvalR;
-    } }
-  }
+  } } }
                            /* Update cell status (i.e. kill some cells and */
   void passOne(elVista *V) /* give a birth to others) and generates E,N,W  */
   {                        /* arrays with increments for neighboring cells */
@@ -321,8 +301,7 @@ private:
         }
         Uval[i] += Uincr; Npos[Nlen] = pos + Nshift;     Nval[Nlen++] = NvalL;
                           Npos[Nlen] = pos + NshiftPlus; Nval[Nlen++] = NvalR;
-    } }
-  }
+  } } }
                  /* Merge same-position cells in N array and copy them */
   void passTwo() /* (with appropriate shift) to S array                */
   {
@@ -422,7 +401,6 @@ private:
     } }
     Ulen = j;
   }
-
 /*---------------------------------------------------------------------------*/
 public:                           /* Calculate new generation, with updating */
   int nextGeneration(elVista *V)  /* the universe using given Vista (actual  */
@@ -436,7 +414,6 @@ public:                           /* Calculate new generation, with updating */
     passOne(V);   passTwo(); passThree();
     return 2;
   }
-
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 private:
   enum cell_location {
@@ -446,15 +423,11 @@ private:
   };
   cell_location find_cell_location(int x, int y, int &where, bool &is_left)
   {
-    int pos = pack(x, y), last_pos, i = pos & xone+yone;
-#if 0
-    printf("pos=%x ", pos);
-#endif
-    is_left = (i == 0 || i == xone+yone);
+    int last_pos, pos = pack(x, y),
+                    i = (pos & xone+yone);
+    is_left =  (i == 0 || i == xone+yone);
 
-    if (finalized) {
-      passZilch(); finalized = 0;
-    }
+    if (finalized) { passZilch();   finalized = 0; }
     if (Ulen == 0) { where = 0; return new_at_end; }
     else {
       if (!is_left) pos--;
@@ -467,43 +440,26 @@ private:
         where = 0;
         return new_insert;
   } } }
-
 public:
   void add(int x, int y, int clr)
   {
     bool is_left;
     int n;
-#if 0
-  printf("add(%d,%d;%d) ", x,y,clr);
-#endif
     if (Usize < Ulen+1) /* make sure we have room for extra cell */
       adjustSize(Usize, Upos, Uval, Usize+Usize/2);
 
     switch (find_cell_location(x, y, n, is_left)) {
     case new_insert:
-#if 0
-  printf("insert(%d) ", n);
-#endif
       for (int i = Ulen; i > n; i--) { Upos[i] = Upos[i-1];
                                        Uval[i] = Uval[i-1]; } /* FALL THRU */
     case new_at_end:
-#if 0
-  printf("pack(%d) is_left:%d ", n, is_left);
-#endif
       Upos[n] = pack(x - 1+is_left, y);
       Uval[n] = is_left ? leftVALUE(clr) : rightVALUE(clr); Ulen++;
       break;
     case update_one:
-#if 0
-  printf("update_one(%d) is_left:%d ", n, is_left);
-#endif
       if (is_left) Uval[n] = (Uval[n] & ~left_cell_mask)| leftVALUE(clr);
       else         Uval[n] = (Uval[n] &~right_cell_mask)|rightVALUE(clr);
-    }
-#if 0
-  printf("U[%d]=%x len=%d\n", n, Uval[n], Ulen);
-#endif
-  }
+  } }
   void toggle(int x, int y, int clr)
   {
     bool is_left;
@@ -533,8 +489,7 @@ public:
           else Uval[n] = (Uval[n] & ~right_cell_mask)|rightVALUE(clr);
         }
         else Uval[n] |= rightVALUE(clr);
-    } }
-  }
+  } } }
   void clear(int x, int y)
   {
     bool is_left;
@@ -545,10 +500,12 @@ public:
         for (int i = n+1; i < Ulen; i++) { Upos[i-1] = Upos[i];
                                            Uval[i-1] = Uval[i]; }
         Ulen--;
-    } }
+  } } }
+  void clearTheWorld(void)
+  {
+    Ulen = 0;
   }
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
-
   void iterate(elObservador &eo)
   {
     for (int i = 0; i < Ulen; i++) {
@@ -572,28 +529,15 @@ public:
   } }
   void iterate(elObservador &eo, int xmin, int xmax, int ymin, int ymax)
   {
-#if 0
-  printf("iterate(%d,%d;%d,%d) Ulen=%d ", xmin, xmax, ymin, ymax, Ulen);
-  if (Ulen) printf("U[0]=%x(%d,&d)", Uval[0], X(Upos[0]), Y(Upos[0]));
-  printf("\n");
-#endif
     for (int i = 0; i < Ulen; i++) {
       int y = Y(Upos[i]);
       if (ymin <= y && y <= ymax) {
         int val = Uval[i], x = X(Upos[i]);
         if ((val & left_alive_mask)
-            && xmin <= x && x <= xmax) eo.observe(x, y, leftCOLOR(val));
-#if 0
-        else if (xmin <= x && x <= xmax) 
-          eo.observe(x, y, ((val >> 6) & 7)+elcvDead);
-#endif
+                 && xmin <= x && x <= xmax) eo.observe(x, y, leftCOLOR(val));
         x++;
         if ((val & right_alive_mask)
-            && xmin <= x && x <= xmax) eo.observe(x, y, rightCOLOR(val));
-#if 0
-        else if (xmin <= x && x <= xmax) 
-          eo.observe(x, y, ((val >> 2) & 7)+elcvDead);
-#endif
+                 && xmin <= x && x <= xmax) eo.observe(x, y, rightCOLOR(val));
   } } }
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   void getFitFrame(int &xmin, int &xmax, int &ymin, int &ymax)
@@ -602,7 +546,7 @@ public:
       xmin = xmax = X(Upos[0]);
       ymin =        Y(Upos[0]);
       for (int i = 1; i < Ulen; i++) {
-        int x = X(Upos[1]);
+        int x = X(Upos[i]);
         if (x < xmin) xmin = x;
         if (x > xmax) xmax = x;
       }
@@ -613,6 +557,5 @@ public:
       ymin = YvMin; ymax = YvMax; // quo (so the screen will not flicker)
   } }
 };
-/*---------------------------------------------------------------------------*/
 elMundo *new_elMundoA() { return new elMundoA(); }
-
+//-----------------------------------------------------------------------------

@@ -1,12 +1,20 @@
-epiLife++ (main)                                               |elpp.h
-                                                               |elpp.cpp
-- elMundo (the World)                                          |elmundo.h
-                                                        generic|elmundo.cpp
-                                                        A(rray)|elmundo-a.cpp
-- elVista (the View)                                           |elvista.h
-                                                               |elvista.cpp
-Makefile                                                       |Makefile
-                                                               |LICENSE
+ʁjuego de la vida ʀ- Viewer/editor/etc for Conway's Game of Life |jdlv.h
+startup and main controls    (c) EpiMG (epiktetov), 2002, 2011 |jdlv.cpp
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|- - - - - - - -
+elMundo (the World) keeps the world of Life cells              |elmundo.h
+- generic code                                                 |elmundo.cpp
+- simple A(rray)-based implementation (converted from Java)    |elmundo-a.cpp
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|- - - - - - - -
+elVista (the View) is responsible for visual representation,   |elvista.h
+              double-inherited from QWidget and elObservador   |elvista.cpp
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|- - - - - - - -
+Qt project file, adds jdlv.icns                                |jdlv.pro
+MacOS info.plist                                               |jdlv.Info.plist
+                                      Makefile (auto-generated)|Makefile
+zlib-style license                                             |LICENSE
 ---------------------------------------------------------------|----------------
-epiLife.java                                                   |epiLife.java
+Java applet for Conway's Game of Life (colorized)              |epiLife.java
+Copyright 1999,2002 by Michael Epiktetov, epi@ieee.org         |
+- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|- - - - - - - -
+setting PATH (must use 'source')                               |gtk-path.sh
                                                                |race.rle
