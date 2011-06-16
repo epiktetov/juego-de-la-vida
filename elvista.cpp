@@ -24,23 +24,22 @@ elVista::~elVista() { if (pixmap) delete pixmap; }
 static  QColor visColors[elvcMax]; /* indexed by elVisColor enum, see jdlv.h */
 void elVista::initColors(void)
 {
-  visColors[0].setHsvF(  0.0/360,0.0,  0.0); // ... black
-  visColors[1].setHsvF(240.0/360,1.0,  0.6); // ..B blue
-  visColors[2].setHsvF(120.0/360,1.0,  0.6); // .G. green
-  visColors[3].setHsvF(180.0/360,1.0,  0.5); // .GB cyan
-  visColors[4].setHsvF(  0.0/360,1.0,  0.6); // R.. red
-  visColors[5].setHsvF(300.0/360,1.0,  0.6); // R.B magenta
-  visColors[6].setHsvF( 60.0/360,1.0,  0.5); // RG. yellow
-  visColors[7].setHsvF(  0.0/360,1.0,  1.0); // xxx not used
-  visColors[8].setHsvF(200.0/360,0.333,1.0); // dead black cell
-  for (int i = 1; i < elcMax; i++) {
-    qreal H,S,V;
-    visColors[i].getHsvF(&H,&S,&V);
-//+
-//    fprintf(stderr, "%d:H=%.3f,S=%.3f,V=%.3f,#%02x%02x%02x\n", i, H,S,V,
-//            visColors[i].red(), visColors[i].green(), visColors[i].blue());
-    visColors[i+elcvDead].setHsvF(H, 0.333, 1.0);
-  }
+  visColors[ 0].setHsvF(  0.0/360,0.0,  0.0); // ... black
+  visColors[ 8].setHsvF(200.0/360,0.333,1.0); // dead black cell
+  visColors[ 1].setHsvF(220.0/360,1.0,  0.6); // ..B blue
+  visColors[ 9].setHsvF(220.0/360,0.25, 1.0); // ..B blue dead
+  visColors[ 2].setHsvF(120.0/360,0.8,  0.5); // .G. green
+  visColors[10].setHsvF(120.0/360,0.25, 1.0); // .G. green
+  visColors[ 3].setHsvF(180.0/360,1.0,  0.4); // .GB cyan
+  visColors[11].setHsvF(180.0/360,0.25, 0.9); // .GB cyan
+  visColors[ 4].setHsvF(  0.0/360,1.0,  0.6); // R.. red
+  visColors[12].setHsvF(  0.0/360,0.16, 1.0); // R.. red
+  visColors[ 5].setHsvF(300.0/360,1.0,  0.4); // R.B magenta
+  visColors[13].setHsvF(300.0/360,0.16, 1.0); // R.B magenta
+  visColors[ 6].setHsvF( 40.0/360,1.0,  0.4); // RG. yellow
+  visColors[14].setHsvF( 40.0/360,0.25, 0.9); // RG. yellow
+  visColors[ 7].setHsvF(  0.0/360,1.0,  1.0); // xxx not used
+  visColors[15].setHsvF(  0.0/360,1.0,  1.0); // xxx not used
   visColors[elvcBackground].setHsvF(200.0/360,0.2,1.0);
   visColors[elvcGrid] = QColor("white");
 }

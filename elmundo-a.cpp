@@ -407,7 +407,7 @@ public:                           /* Calculate new generation, with updating */
   {                               /* update is made during the first pass)   */
     if (!finalized) {
       passZero(); passTwo(); passThree(); finalized = 1;
-#if 1
+#if 0
       V->update(); return 2;
 #endif
     }

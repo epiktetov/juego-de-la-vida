@@ -4,6 +4,15 @@
 #ifndef EL_MUNDO_H_INCLUDED
 #define EL_MUNDO_H_INCLUDED
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+class elMatriz              // Rotation/mirror matrix, specifies transformation
+{                           // as:  new_x = a*x + b*y
+public:           int a, b; //      new_y = c*x + d*y
+                  int c, d; //
+  elMatriz(void)                       : a(1), b(0), c(0), d(1) { }
+  elMatriz(int A, int B, int C, int D) : a(A), b(B), c(C), d(D) { }
+};
+extern elMatriz Id, Ro, Rc, Rx, Fx, Fy;
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 class elMundo
 {
 public:    elMundo() { }    static void initRegExs(void);
@@ -16,10 +25,11 @@ public:    elMundo() { }    static void initRegExs(void);
 //void pasteString(const char *pattern, int *width = 0, int *height = 0);
 
   void pasteFile  (QString filename, int atX = 0, int atY = 0);
-  void pasteString(QString contents, int atX = 0, int atY = 0);
+  void pasteString(QString contents, int atX = 0, int atY = 0,
+                                elMatriz& M = Id, int o_color = elcDefault);
 protected:
-  void pasteStart(int atX = 0, int atY = 0); int cX0, cX, cY;
-  bool pasteRLEX_add(QString line);
+  void pasteStart(int atX = 0, int atY = 0);              int cX0, cX, cY0, cY;
+  bool pasteRLEX_add(QString line, elMatriz& M = Id, int o_color = elcDefault);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // 'add' method should be optimized for case when cells added in order from
   //     left to right and from top to bottom (since that's how it'll be used)
@@ -48,6 +58,11 @@ public:
   //                  1 stable, 2 otherwise
   //
   virtual int nextGeneration(elVista *ev = 0) = 0;
+//
+// just for fun (TODO: move to Lua script)
+//
+  void make4guns(const char *params);
+  void pasteGun1(int x, int y, char Aj, const char *rle, elMatriz& M, int oc);
 };
 elMundo *new_elMundoA(); // el Mundo type A (array) -- see elmundo-a.cpp
 //-----------------------------------------------------------------------------

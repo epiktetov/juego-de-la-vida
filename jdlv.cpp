@@ -35,12 +35,14 @@ int main(int argc, char *argv[])
 #ifdef Q_OS_MAC
   app.installEventFilter(new MacEvents);
 #endif
-  elMundo::initRegExs();
+  elMundo::initRegExs(); theWorld = new_elMundoA();
   elVista::initColors();
-  theWorld = new_elMundoA(); if (argc == 2) theWorld->pasteFile(argv[1]);
-  mainWin = new jdlvFrame(theWorld);
-  mainWin->show();
-  return app.exec();
+  if (argc > 1) {
+    if (strcmp(argv[1],"-4g") == 0) theWorld->make4guns(argv[2]);
+    else                            theWorld->pasteFile(argv[1]);
+  }
+  mainWin = new  jdlvFrame(theWorld);
+  mainWin->show(); return app.exec();
 }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #ifdef Q_OS_MAC
