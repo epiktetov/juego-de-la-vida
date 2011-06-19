@@ -17,6 +17,6 @@ QMAKE_CXXFLAGS += -DQtPLATF=\'\"$$QtPLATF\"\'
 
 version.target = version.h
 version.depends = .git $$HEADERS $$SOURCES
-version.commands = @echo \"const char microVERSION[]=\\\"\"\"`git describe --tags --dirty`\"\"\\\";\" >version.h;git status
+version.commands = @echo \"const char jdlvVERSION[]=\\\"\"\"`git describe --tags --dirty`\"\"\\\";\" >version.h;git status
 QMAKE_EXTRA_TARGETS += version
 PRE_TARGETDEPS += version.h

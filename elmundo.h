@@ -28,7 +28,8 @@ public:    elMundo() { }    static void initRegExs(void);
   void pasteString(QString contents, int atX = 0, int atY = 0,
                                 elMatriz& M = Id, int o_color = elcDefault);
 protected:
-  void pasteStart(int atX = 0, int atY = 0);              int cX0, cX, cY0, cY;
+  void pasteStart(int atX = 0, int atY = 0); int cX0, cX, cY0, cY;
+  void pasteLIFE_add(QString line);
   bool pasteRLEX_add(QString line, elMatriz& M = Id, int o_color = elcDefault);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   // 'add' method should be optimized for case when cells added in order from
@@ -70,6 +71,17 @@ class elObservador
 {
 public:
   virtual void observe(int x_abs, int y_abs, int clr) = 0;
+};
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+class elSalvador : public elObservador
+{
+  int X0, pX, pY, pC, pN; bool withColors;
+  elMundo &world;                 QString rle;
+public:
+  elSalvador(elMundo& mundoParaSalvar) : world(mundoParaSalvar) { }
+  void save(bool conColores);
+  virtual void flush(QString line);
+  virtual void observe(int x_abs, int y_abs, int clr);
 };
 /*---------------------------------------------------------------------------*/
 #endif                                                /* EL_MUNDO_H_INCLUDED */

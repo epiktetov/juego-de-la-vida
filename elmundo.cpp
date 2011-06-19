@@ -14,16 +14,25 @@ elMatriz Id( 1, 0, 0, 1), // identical transformation (i.e. no transformation)
          Fx(-1, 0, 0, 1), // flip (mirror) by X axis
          Fy( 1, 0, 0,-1); // flip (mirror) by Y axis
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-static QRegExp reRLEstart, reBrule("B(\\d+)", Qt::CaseInsensitive),
-                           reSrule("S(\\d+)", Qt::CaseInsensitive);
+static QRegExp reRLEstart,  reBrule("B(\\d+)", Qt::CaseInsensitive),
+               reCellBlock, reSrule("S(\\d+)", Qt::CaseInsensitive),
+               reDBlifeCmd;
 
 void elMundo::initRegExs(void)
 {
   QString RLEst = Utf8("x…=…(\\d+),…y…=…(\\d+)(?:,…rule…=…([bs/0-9]+))?");
+  QString CBst  = Utf8("#P…([+0-9-]+)…([+0-9-]+)");
+  QString DBLst = Utf8("([0-9]+k)?([0-9]+h)?@!");
   RLEst.replace(Utf8("…"), "\\s*");
+  CBst. replace(Utf8("…"), "\\s*");
+  DBLst.replace(Utf8("…"), "\\s*");
   reRLEstart.setCaseSensitivity(Qt::CaseInsensitive);
   reRLEstart.setPattern(RLEst);
+  reCellBlock.setCaseSensitivity(Qt::CaseInsensitive);
+  reCellBlock.setPattern(CBst);
+  reDBlifeCmd.setPattern(DBLst);
 }
+char CName[elcMax+2] = "oavxrzcX";
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elMundo::setRules (QString ruleString)
 {
@@ -50,16 +59,26 @@ void elMundo::pasteFile (QString filename, int atX, int atY)
   QTextStream in(&file);                       setRules(0x8,0xC);
   while (! in.atEnd()) {
     QString line = in.readLine();
-    if (line.startsWith('#')) continue; // TODO: keep comments somewhere
-    if (reRLEstart.exactMatch(line)) {
+         if (line.isEmpty()) continue; // always ignore completely empty lines
+    else if (line.startsWith('#')) {
+      if (line.startsWith("#R"))
+        continue; // TODO: process rules
+      else if (reCellBlock.exactMatch(line))
+        pasteStart(atX + reCellBlock.cap(1).toInt(),
+                   atY + reCellBlock.cap(2).toInt());
+      else if (line.startsWith("#C") || line.startsWith("#C"))
+        continue; // TODO: keep comments somewhere
+    }
+    else if (line.startsWith('!')) { // dblife-style comments
+        continue; // TODO: keep comments somewhere
+    }
+    else if (reRLEstart.exactMatch(line)) {
       if (!reRLEstart.cap(3).isEmpty()) setRules(reRLEstart.cap(3).cStr());
       pasteStart(atX, atY);
       while (!in.atEnd())
         if (pasteRLEX_add(in.readLine())) break; break;
     }
-    // TODO: other types
-    else
-      fprintf(stderr, "?:%s\n", line.cStr());
+    else pasteLIFE_add(line);
   }
   file.close();
 }
@@ -69,6 +88,24 @@ void elMundo::pasteString (QString contents, int atX,
   pasteStart(atX, atY); pasteRLEX_add(contents, M, o_color);
 }
 void elMundo::pasteStart(int atX, int atY) { cX0 = cX = atX; cY0 = cY = atY; }
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elMundo::pasteLIFE_add (QString line)
+{
+  int cN = 0;
+  for (QString::const_iterator it  = line.constBegin();
+                               it != line.constEnd(); it++) {
+    QChar c = *it;
+    if (c.isDigit()) cN = 10*cN + c.digitValue();
+    else {
+      if (cN == 0) cN = 1;
+      switch (c.unicode()) {
+      case '.': cX += cN; cN = 0; break;
+      case '*':
+      case 'O':
+        while (cN > 0) { add(cX, cY, elcDefault); cX++; cN--; }
+  } } }
+  cX = cX0; cY++;
+}
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 bool elMundo::pasteRLEX_add (QString line, elMatriz& M, int o_color)
 {
@@ -94,9 +131,8 @@ bool elMundo::pasteRLEX_add (QString line, elMatriz& M, int o_color)
       case 'k': clr = elcBlack;   break;  case 'n': clr = elcNegro;   break;
       case 'g': clr = elcGreen;   break;  case 'v': clr = elcVerde;   break;
                                           case 'r': clr = elcRojo;    break;
-                                          case 'a': clr = elcAzul;    break;
-      case 'x': clr = elcCyan;    break;  case 'c': clr = elcCianico; break;
-      case 'y': clr = elcYellow;  break;
+      case 'x': clr = elcCyan;    break;  case 'a': clr = elcAzul;    break;
+      case 'y': clr = elcYellow;  break;  case 'c': clr = elcCastano; break;
       case 'z': clr = elcMagenta; break;
       case 'o':
       default:  clr = o_color;
@@ -203,19 +239,19 @@ void elMundo::pasteGun1 (int atX, int atY, char Aj,
                       pasteRLEX_add(rle, M, o_color);
 };
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void elMundo::make4guns(const char *params)
+void elMundo::make4guns(const char *param_string)
 {
-  char c, sign[10] = "....:...."; srand(time(NULL));
+  QString params(param_string); params.append(".........");
+  char c, sign[10];                      srand(time(NULL));
   int N = 0, i;
-  if (!params || strlen(params) < 9) params = "....:....";
   for (i = 0; i < 4; i++) {
-    if (('A' <= (c = params[i]) && c <= 'Z') ||
-        ('a' <=  c              && c <= 'z')) sign[i] = c;
+    if (('A' <= (c = params[i].unicode()) && c <= 'Z') ||
+        ('a' <=  c                        && c <= 'z')) sign[i] = c;
     else {
       N = rand() % 52; sign[i] = (N < 26) ? (N+'A') : (N-26+'a');
   } }
   for (i = 0; i < 4; i++) {
-    if (('0' <= (c = params[i+5]) && c <= '7')) sign[i+5] = c;
+    if (('0' <= (c = params[i+5].unicode()) && c <= '7')) sign[i+5] = c;
     else {
       N = rand() % 8; sign[i+5] = N+'0';
   } }
@@ -237,5 +273,59 @@ void elMundo::make4guns(const char *params)
                                                    gunCfg[sign[6]-'0'].p,
                                                    gunCfg[sign[7]-'0'].p,
                                                    gunCfg[sign[8]-'0'].p);
+}
+//-----------------------------------------------------------------------------
+void elSalvador::save (bool conColores)
+{
+  int xmin, xmax, ymin, ymax;
+  world.getFitFrame(xmin, xmax, ymin, ymax);
+  QString line = QString("x = %1, y = %2").arg(xmax-xmin+1).arg(ymax-ymin+1);
+  flush(line);
+  X0 = xmin; pX = xmin-1; pC = elcDead; withColors = conColores;
+             pY = ymin;   pN = 0;
+  world.iterate(*this);
+  observe(pX+1,pY,elcDead); flush(rle+"!");
+}
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elSalvador::observe (int x, int y, int clr)
+{
+  if (x == pX+1 && y == pY && clr == pC) { pX++; pN++; return; }
+  int len, i;
+  QChar addC = withColors ? CName[pC] : 'o';
+  switch (pN) {
+  case 0:                                        break;
+  case 1:  rle.append(addC);                     break;
+  case 2:  rle.append(QString(addC)+addC);       break;
+  default: rle.append(QString::number(pN)+addC); break;
+  }
+  if (y > pY) {
+    switch (( len = y-pY )) {
+    case 0:                    break;
+    case 1:  rle.append("$");  break;
+    case 2:  rle.append("$$"); break;
+    default:
+      if (withColors) rle.append(QString("%1$").arg(len));
+      else                             //
+        while (len--) rle.append("$"); // "withoutColor" means "fully compliant
+    }                                  // with standard RLE", so no $-repeating
+    pX = X0-1;
+  }
+  switch (( len = x-pX-1 )) {
+  case 0:                                break;
+  case 1:  rle.append("b");              break;
+  case 2:  rle.append("bb");             break;
+  default: rle.append(QString("%1b").arg(len));
+  }
+  pX = x; pC = clr;
+  pY = y; pN = 1;
+  if ((len = rle.length()) > 70) {
+    for (i = 70; rle.at(i-1).isDigit(); i--) ;
+    flush(rle.left(i));
+    rle = rle.mid(i);
+} }
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elSalvador::flush (QString line)
+{
+  fprintf(stderr, "%s\n", line.cStr());
 }
 //-----------------------------------------------------------------------------

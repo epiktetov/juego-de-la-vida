@@ -9,8 +9,10 @@ elVista (the View) is responsible for visual representation,   |elvista.h
               double-inherited from QWidget and elObservador   |elvista.cpp
 - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -|- - - - - - - -
 Qt project file, adds jdlv.icns                                |jdlv.pro
+Qt resource file adds jdlv48.png and other files to executable |jdlv.qrc
 MacOS info.plist                                               |jdlv.Info.plist
                                       Makefile (auto-generated)|Makefile
+                                               (auto-generated)|version.h
 zlib-style license                                             |LICENSE
 ---------------------------------------------------------------|----------------
 Java applet for Conway's Game of Life (colorized)              |epiLife.java

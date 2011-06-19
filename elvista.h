@@ -9,10 +9,11 @@
 
 class elVista : public QWidget, public elObservador
 {
-  jdlvFrame  *dad;              // father frame
-  elMundo  *world;              // the world we're observing
-  QPainter    *pt; //bool ptNext; // painter & "paint next gen" flag
+  jdlvFrame  *dad; // father frame
+  elMundo  *world; // the world we're observing
+  QPainter    *pt; // painter & "paint next gen" flag
   QPixmap *pixmap;
+  QString timeInfo;
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 public:    elVista(jdlvFrame *padre, elMundo *mirandoAlMundo);
   virtual ~elVista();
@@ -27,6 +28,7 @@ protected:
   int x_center, mag, xOffset, pixels_per_cell, cell_size,
       y_center,      yOffset, cells_per_pixel;
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  int find_closest_mag(int delta_mag);
   void adjust_mag_params         (int  &width_abs, int &height_abs);
   void resizeVista(int delta_mag, int x_fixed_vis, int y_fixed_vis);
   void resizeVista(int delta_mag = 0); // with fixed center position
@@ -37,14 +39,11 @@ public:
   void resize_to_fit();
   void resizeEvent(QResizeEvent *ev);
   void paintEvent (QPaintEvent  *ev);
-//protected:
-//  void paint(int x_vis, int y_vis, int color);
-//  void clearRect (QRect rect);
-//  void updateRect(QRect rect);
-//public:
+  void show_time_info (QString info) { timeInfo = info; }
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   void mousePressEvent(QMouseEvent *ev);
   void wheelEvent     (QWheelEvent *ev);
 };
+extern QIcon *enBlancoIco, *enRojoIco, *enCastanoIco, *enVerdeIco, *enAzulIco;
 /*---------------------------------------------------------------------------*/
 #endif                                                /* EL_VISTA_H_INCLUDED */
