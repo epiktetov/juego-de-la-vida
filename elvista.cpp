@@ -43,7 +43,7 @@ void elVista::initColors(void)
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 elVista::elVista (jdlvFrame *father, elMundo *lookingAtWorld)
                        : dad(father),   world(lookingAtWorld),
-                           pt(0), pixmap(NULL) //ptNext(false)
+                         pt(0), pixmap(NULL), isMoving(false)
 { 
   setAttribute(Qt::WA_OpaquePaintEvent);
 //+  setAttribute(Qt::WA_PaintOnScreen);
@@ -208,22 +208,42 @@ void elVista::paintEvent (QPaintEvent*)
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::mousePressEvent (QMouseEvent *ev)
 {
-  int x_abs, y_abs;
   switch (ev->type()) {
-  case QEvent::MouseButtonPress:
-    if (dad->isProtected()) return;
-    x_abs = Xvis2abs(ev->x());
-    y_abs = Yvis2abs(ev->y());
-    if (ev-> modifiers() & Qt::ShiftModifier)
-              world->toggle (x_abs, y_abs, dad->getCurrentColor());
-    else if (!world->recolor(x_abs, y_abs, dad->getCurrentColor())) break;
-    ev->accept();                                 updateTheWorld(); break;
+  case QEvent::MouseButtonPress: mpLast = ev->pos();
+    if (dad->changesAllowed()) {
+      int absX = Xvis2abs(ev->x()),
+          absY = Yvis2abs(ev->y());
+      if (ev-> modifiers() & Qt::ShiftModifier)
+                world->toggle (absX, absY, dad->getCurrentColor());
+      else if (!world->recolor(absX, absY, dad->getCurrentColor())) break;
+      ev->accept();                              updateTheWorld();
+    }
+    break;
   case QEvent::MouseButtonDblClick:
     x_center = Xvis2abs(ev->x());
     y_center = Yvis2abs(ev->y()); ev->accept(); updateTheWorld();
   default:
     break;
 } }
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void elVista::mouseMoveEvent (QMouseEvent *ev)
+{
+  int dX = ev->x() - mpLast.x();
+  int dY = ev->y() - mpLast.y();
+  x_center = Xvis2abs(Xabs2vis(x_center)-dX);
+  y_center = Yvis2abs(Yabs2vis(y_center)-dY); mpLast = ev->pos();
+//+
+  fprintf(stderr, "dx=(%d,%d),center=(%d,%d)\n", dX, dY,
+                            x_center, y_center);
+//-
+  ev->accept();
+  if (! isMoving) setCursor(Qt::ClosedHandCursor);
+        isMoving = true;         updateTheWorld();
+}
+void elVista::mouseReleaseEvent (QMouseEvent*)
+{
+  if (isMoving) unsetCursor(); isMoving = false;
+}
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::wheelEvent (QWheelEvent *ev)
 {
@@ -232,9 +252,9 @@ void elVista::wheelEvent (QWheelEvent *ev)
     update();
   }
   else {
-    int delta = -ev->delta()/2;
+    int delta = ev->delta()/2;
     if (ev->orientation() == Qt::Vertical)
-         y_center = Yvis2abs(Yabs2vis(y_center)+delta);
-    else x_center = Xvis2abs(Xabs2vis(x_center)+delta); updateTheWorld();
+         y_center = Yvis2abs(Yabs2vis(y_center)-delta);
+    else x_center = Xvis2abs(Xabs2vis(x_center)-delta); updateTheWorld();
 } }
 //-----------------------------------------------------------------------------

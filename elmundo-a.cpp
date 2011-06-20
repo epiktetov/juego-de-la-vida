@@ -440,8 +440,8 @@ private:
         where = 0; return new_insert;
   } } }
 public:
-  void add(int x, int y, int clr)
-  {
+  void add(int x, int y, int clr) /* add new cell (if cell at the specified */
+  {                               /* location already exists, change color) */
     bool is_left;
     int n;
     if (Usize < Ulen+1) /* make sure we have room for extra cell */
@@ -459,9 +459,9 @@ public:
       if (is_left) Uval[n] = (Uval[n] & ~left_cell_mask)| leftVALUE(clr);
       else         Uval[n] = (Uval[n] &~right_cell_mask)|rightVALUE(clr);
   } }
-  void toggle(int x, int y, int clr)
-  {
-    bool is_left;
+  void toggle(int x, int y, int clr) /* toggle the cell's "is alive" state: */
+  {                                  /*  kill existing cell or add new one, */
+    bool is_left;                    /*  depending of the current condition */
     int n;
     if (Usize < Ulen+1) /* make sure we have room for extra cell */
       adjustSize(Usize, Upos, Uval, Usize+Usize/2);
@@ -477,11 +477,15 @@ public:
     case update_one:
       if (is_left) {
         if (Uval[n] & left_alive_mask) Uval[n] &= ~left_cell_mask;
-        else                           Uval[n] |=  leftVALUE(clr);
+                                  else Uval[n] |=  leftVALUE(clr);
       }
       else { if (Uval[n] & right_alive_mask) Uval[n] &= ~right_cell_mask;
-             else                            Uval[n] |=  rightVALUE(clr); }
-  } }
+                                        else Uval[n] |=  rightVALUE(clr); }
+      if (Uval[n] == 0) {
+        for (int i = n+1; i < Ulen; i++) { Upos[i-1] = Upos[i];
+                                           Uval[i-1] = Uval[i]; }
+        Ulen--;
+  } } }
   bool recolor(int x, int y, int clr) // returns false if cannot recolor, that
   {                                   // is, when cell at (x,y) is not alive
     bool is_left;
@@ -495,8 +499,8 @@ public:
       { Uval[n] = (Uval[n] & ~right_cell_mask)|rightVALUE(clr); return true; }
  /* else */                                                     return false;
   }
-  void clear(int x, int y)
-  {
+  void clear(int x, int y) /* currently not used (method is kept */
+  {                        /* here mostly for reference purpose) */
     bool is_left;
     int n;
     if (find_cell_location(x, y, n, is_left) == update_one) {

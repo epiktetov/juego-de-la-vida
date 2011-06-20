@@ -43,8 +43,11 @@ public:
   void paintEvent (QPaintEvent  *ev);
   void show_time_info (QString info) { timeInfo = info; }
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  void mousePressEvent(QMouseEvent *ev);
-  void wheelEvent     (QWheelEvent *ev);
+protected:
+  void mousePressEvent  (QMouseEvent *ev); QPoint mpLast; // vis coords
+  void mouseMoveEvent   (QMouseEvent *ev); bool isMoving;
+  void mouseReleaseEvent(QMouseEvent *ev);
+  void wheelEvent       (QWheelEvent *ev);
 };
 extern QIcon *enBlancoIco, *enRojoIco, *enCastanoIco, *enVerdeIco, *enAzulIco;
 /*---------------------------------------------------------------------------*/

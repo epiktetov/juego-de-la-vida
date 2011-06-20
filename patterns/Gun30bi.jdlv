@@ -1,8 +1,8 @@
 #D The very first glider gun (Bill Gosper et al, 1970)
 #D refound and fixed by Dieter Leithner (before 1996)
 x = 37, y = 25
-25bobo$10bo14bo3ba$8bobo18ba$7bobo15bo4ba4boo$boo3bobbo19ba5boo$boo4bo
-bo9bobo3bo3ba$8bobo8bobbobbobo$10bo10bo$20bo4$16boo3boo5bo$16boo3boo6b
-o$17b5o5b3o$18bobo$$18b3o3$36bo$34bobo$35boo$19boo$19boo!
+25brbr$10bo14br3br$8bobo18br$7bobo15br4br4boo$boo3bobbo19br5boo$boo4bo
+bo15br3br$8bobo14brbr$10bo5$16boo3boo$16boo3boo$17b5o$18bobo$$18b3o6$
+19boo$19boo!
 
 Shoots bi-color gliders!

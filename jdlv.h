@@ -78,8 +78,8 @@ protected:
   void SetWinTitle();
   void PreparePlay();
 public:
-  bool isProtected() const { return (eM != elModeEdit || genNo > 0); }
-  int getCurrentColor(void) const                 { return curColor; }
+  bool changesAllowed() const { return (eM == elModeEdit && genNo == 0); }
+  int getCurrentColor(void) const                     { return curColor; }
 };
 #ifdef Q_OS_MAC
 class MacEvents : public QObject { Q_OBJECT 
