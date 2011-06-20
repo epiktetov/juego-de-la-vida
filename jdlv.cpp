@@ -8,7 +8,6 @@
 #include "elvista.h" /* class elVista               */
 #include "version.h"
 
-static elMundo  *theWorld;
 static jdlvFrame *mainWin;
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 class jdlvStyle : public QProxyStyle
@@ -27,7 +26,7 @@ public:
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 int main(int argc, char *argv[])
 {
-  QApplication app(argc,argv); app.setStyle(new jdlvStyle);
+  QApplication app(argc,argv); app.setStyle(new jdlvStyle); srand(time(NULL));
   QCoreApplication::setOrganizationDomain("epiktetov.com");
   QCoreApplication::setOrganizationName("EpiMG");
   QCoreApplication::setApplicationName("jdlv");
@@ -36,7 +35,7 @@ int main(int argc, char *argv[])
 #elif defined(UNIX)
   app.setWindowIcon(QIcon(":/jdlv48.png"));
 #endif
-  elMundo::initRegExs(); theWorld = new_elMundoA();
+  elMundo::initRegExs(); elMundo *theWorld = new_elMundoA();
   elVista::initColors();
   if (argc > 1) {
     if (strcmp(argv[1],"-4g") == 0) theWorld->make4guns(argv[2]);
@@ -74,8 +73,9 @@ public: permanentToolBar(const QString &title, QWidget *parent = 0)
 # define jdlvFONTSIZE  10
 #endif
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-jdlvFrame::jdlvFrame(elMundo *world) : eM(elModeView), genNo(0),
-                          showTime(false), timerID(0), speed(3)
+jdlvFrame::jdlvFrame(elMundo *world) : primeWorld(world), nextWorld(NULL),
+  eM(elModeView), genNo(0), curColor(0),
+      timerID(0), speed(3)
 {
   QFont fixedFont(jdlvFONTFACENAME, jdlvFONTSIZE); SetWinTitle();
         fixedFont.setStyleHint(QFont::TypeWriter);
@@ -86,18 +86,18 @@ jdlvFrame::jdlvFrame(elMundo *world) : eM(elModeView), genNo(0),
   bottom->setFloatable(false);
   bottom->setMovable  (false);
   bottom->setIconSize(QSize(28,25));
-  showTimeCB = new QAction(QIcon("buttons/time1.png"), QString("time"), this);
-  showInfoPB = new QAction(QIcon("buttons/info.png"), QString("info"), this);
+  showTimeCB = new QAction(QIcon(":/time.png"), QString("time"), this);
+  showInfoPB = new QAction(QIcon(":/info.png"), QString("info"), this);
   connect(showTimeCB, SIGNAL(triggered(bool)), this, SLOT(ToggleTime(bool)));
-  connect(showInfoPB, SIGNAL(triggered()), this, SLOT(ShowInfo()));
+  connect(showInfoPB, SIGNAL(triggered()),     this, SLOT(ShowInfo()));
   bottom->addAction(showTimeCB);
-  bottom->addAction(showInfoPB);          showInfoPB->setEnabled(false); //+
+  bottom->addAction(showInfoPB);         showInfoPB->setEnabled(false); //+
   bottom->addWidget(new QLabel(" "));
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   QActionGroup *modeGroup = new QActionGroup(this);
-  modeView = new QAction(QIcon("buttons/eye-half.png"),   QString("View"),  this);
-  modeEdit = new QAction(QIcon("buttons/pen-in-box-2.png"),  QString("Edit"),  this);
-  setColor = new QAction(QIcon("buttons/empty1.png"), QString("color"), this);
+  modeView = new QAction(QIcon(":/eye-half.png"),  QString("View"),  this);
+  modeEdit = new QAction(QIcon(":/pen-in-box.png"),QString("Edit"),  this);
+  setColor = new QAction(QIcon(":/empty1.png"),    QString("color"), this);
   connect(modeView, SIGNAL(triggered()), this, SLOT(SetModeView()));
   connect(modeEdit, SIGNAL(triggered()), this, SLOT(SetModeEdit()));
   connect(setColor, SIGNAL(triggered()), this, SLOT(PopupColorMenu()));
@@ -111,18 +111,17 @@ jdlvFrame::jdlvFrame(elMundo *world) : eM(elModeView), genNo(0),
                                   bottom->addAction(setColor);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   QMenu *file_menu = menuBar()->addMenu("File");
-  openFile = new QAction(QIcon("buttons/book.png"), QString("Open.."), this);
-  reLoad = new QAction(QIcon("buttons/reload1.png"), QString("reload"), this);
-  connect(reLoad,   SIGNAL(triggered()), this, SLOT(DoReload()));
+  openFile =  new QAction(QIcon(":/book.png"), QString("Open.."), this);
+  reLoad = new QAction(QIcon(":/reload1.png"), QString("reload"), this);
+  connect(reLoad, SIGNAL(triggered()),   this, SLOT(DoReload()));
   file_menu->addAction(openFile);
-  file_menu->addAction(reLoad);    reLoad->setEnabled(false);
+  file_menu->addAction(reLoad); reLoad->setEnabled(false);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   QMenu *edit_menu = menuBar()->addMenu("Edit");
-//  pasteClip = new QAction(QIcon("buttons/new2.png"), QString("paste"), this);
-  pasteClip = new QAction(QIcon("buttons/win-menu.png"), QString("paste"), this);
-  saveCLR = new QAction(QIcon("buttons/transfers-blue.png"), QString("save"), this);
-  saveBnW = new QAction(QIcon("buttons/transfers.png"), QString("save b&w"), this);
-  newWin = new QAction(QIcon("buttons/windows1.png"), QString("new window"), this);
+  pasteClip = new QAction(QIcon(":/win-paste.png"), QString("paste"),    this);
+  saveCLR = new QAction(QIcon(":/export-blue.png"), QString("save"),     this);
+  saveBnW = new QAction(QIcon(":/export-mono.png"), QString("save b/w"), this);
+  newWin = new QAction(QIcon(":/windows1.png"),   QString("new window"), this);
   bottom->addAction(pasteClip);     pasteClip->setEnabled(false); //+
   bottom->addAction(saveCLR);
   bottom->addAction(saveBnW);
@@ -142,18 +141,20 @@ jdlvFrame::jdlvFrame(elMundo *world) : eM(elModeView), genNo(0),
   colorMenu->addAction(*enCastanoIco,  yellow)->setShortcut(QKeySequence("c"));
   colorMenu->addAction(*enVerdeIco,   "verde")->setShortcut(QKeySequence("v"));
   colorMenu->addAction(*enAzulIco,     "azul")->setShortcut(QKeySequence("a"));
+  colorMenu->addSeparator();
+  colorMenu->addAction("random Bicolor")->setShortcut(QKeySequence("Ctrl+B"));
+  colorMenu->addAction("random Recolor")->setShortcut(QKeySequence("Ctrl+R"));
+  colorMenu->addAction("Un-color all")  ->setShortcut(QKeySequence("Ctrl+U"));
   connect(colorMenu, SIGNAL(triggered(QAction*)),
                this, SLOT(SelectColor(QAction*)));
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  QLabel *magIcon = new QLabel;
-  magIcon->setPixmap(QPixmap("buttons/zoom3.png"));
+  QLabel *magIcon = new QLabel; magIcon->setPixmap(QPixmap(":/zoom3.png"));
   magText = new QLabel(QString("+1"));
   magText->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
   magText->setFont(fixedFont);
-  magText->setMinimumSize(QSize(30,25));
-  bottom->addWidget(magText);
-  bottom->addWidget(magIcon);
-  fitView = new QAction(QIcon("buttons/full-size.png"), QString("fit"), this);
+  magText->setMinimumSize(QSize(30,25));     bottom->addWidget(magText);
+                                             bottom->addWidget(magIcon);
+  fitView = new QAction(QIcon(":/full-size.png"), QString("fit"), this);
   connect(fitView, SIGNAL(triggered()), this, SLOT(DoFitView()));
   bottom->addAction(fitView);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -161,9 +162,9 @@ jdlvFrame::jdlvFrame(elMundo *world) : eM(elModeView), genNo(0),
   playGen = new QLabel(QString("0"));
   playGen->setAlignment(Qt::AlignRight|Qt::AlignVCenter);
   playGen->setMinimumSize(QSize(66,25));
-  prevGen = new QAction(QIcon("buttons/step-back.png"), QString("back"), this);
-  nextGen = new QAction(QIcon("buttons/go-forward.png"), QString("step"), this);
-  playStop = new QAction(QIcon("buttons/fast-forward.png"), QString("go!"), this);
+  prevGen =  new QAction(QIcon(":/step-back.png"),    QString("back"), this);
+  nextGen =  new QAction(QIcon(":/go-forward.png") ,  QString("step"), this);
+  playStop = new QAction(QIcon(":/fast-forward.png"), QString("go!"),  this);
   connect(prevGen,  SIGNAL(triggered()), this, SLOT(DoPrevGen()));
   connect(nextGen,  SIGNAL(triggered()), this, SLOT(DoNextGen()));
   connect(playStop, SIGNAL(triggered()), this, SLOT(DoPlayStop()));
@@ -188,9 +189,9 @@ jdlvFrame::jdlvFrame(elMundo *world) : eM(elModeView), genNo(0),
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void jdlvFrame::LoadTheWorld(QString filename)
 {
-  theWorld->clearTheWorld();
-  theWorld->pasteFile(filename.cStr()); vista->resize_to_fit();
-  genNo = 0;     playGen->setText("0");
+  primeWorld->clearTheWorld();
+  primeWorld->pasteFile(filename.cStr()); vista->resize_to_fit();
+  genNo = 0;       playGen->setText("0");
 }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void jdlvFrame::SetWinTitle()
@@ -203,53 +204,85 @@ void jdlvFrame::ShowInfo() {}
 void jdlvFrame::SetModeView() { eM = (eM & elModePlay) | elModeView; }
 void jdlvFrame::SetModeEdit() { eM = (eM & elModePlay) | elModeEdit; }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void jdlvFrame::PopupColorMenu()          { colorMenu->popup(QCursor::pos()); }
-void jdlvFrame::SelectColor(QAction *act) { setColor->setIcon(act->icon());   }
+void jdlvFrame::SelectColor (QAction *act) // called from menu action
+{                                          //
+  if (act->text().startsWith("random")) {
+    elRecolorator rc(act->text().indexOf("Bi") > 0 ? "%%%%%%%" : "*******");
+    primeWorld->changeTheWorld(rc);
+         vista->updateTheWorld  ();
+  }
+  else { switch (act->text().at(0).unicode()) {
+    case 'o': curColor = elcDefault; break;
+    case 'r': curColor = elcRojo;    break;
+    case 'v': curColor = elcVerde;   break;
+    case 'a': curColor = elcAzul;    break;
+    case 'x': curColor = elcCianico; break;
+    case 'c': curColor = elcCastano; break;
+    case 'z': curColor = elcMagenta; break;
+    case 'u':
+      { elRecolorator uc("ooooooo"); primeWorld->changeTheWorld(uc);
+                                          vista->updateTheWorld  (); return; }
+    } setColor->setIcon(act->icon());
+} }
+void jdlvFrame::PopupColorMenu() { colorMenu->popup(QCursor::pos()); }
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void jdlvFrame::UpdateMag() { QString S; S.sprintf("%+3d",vista->get_mag());
+                                                        magText->setText(S); }
 void jdlvFrame::PasteClip() {}
 void jdlvFrame::SaveBnW()
 {
-  elSalvador saver(*theWorld);
+  elSalvador saver(*primeWorld);
   saver.save(false);
 }
 void jdlvFrame::SaveCLR()
 {
-  elSalvador saver(*theWorld);
+  elSalvador saver(*primeWorld);
   saver.save(true);
 }
-void jdlvFrame::NewWindow() {}
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void jdlvFrame::DoPrevGen() { }
-void jdlvFrame::DoNextGen() { timerEvent(NULL);       }
-//+{ vista->show_next_gen(); }
+void jdlvFrame::DoReload() { }
+void jdlvFrame::NewWindow() { }
 void jdlvFrame::DoFitView() { vista->resize_to_fit(); }
+//-----------------------------------------------------------------------------
+void jdlvFrame::PreparePlay()
+{
+  if (genNo && nextWorld) return;
+  else {
+    if (nextWorld) nextWorld->clearTheWorld();
+    else           nextWorld = new_elMundoA(); vista->lookAtThis(nextWorld);
+    prevGen->setEnabled(true);
+} }
+void jdlvFrame::DoPrevGen() // until full undo is implemented, "prev gen" means
+{                           // reverting back to the (untouched) primeWorld
+  if (genNo && nextWorld) {
+    if (eM & elModePlay) DoPlayStop();         genNo = 0;
+    vista->lookAtThis(primeWorld); playGen->setText("0");
+    vista->updateTheWorld();       prevGen->setEnabled(false);
+} }
+void jdlvFrame::DoNextGen() { PreparePlay(); timerEvent(NULL); }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 int speed2msec[] = { -1, 600, 150, 30, 0 };
 quint64 lastTick;
 void jdlvFrame::DoPlayStop()
 {
   if (eM & elModePlay) {
-    eM &= ~elModePlay;                killTimer(timerID);
-    playStop->setIcon(QIcon("buttons/fast-forward.png"));
+    eM &= ~elModePlay;          killTimer(timerID);
+    playStop->setIcon(QIcon(":/fast-forward.png")); playStop->setText("go!");
   }
-  else {
-      eM |= elModePlay;
+  else {  PreparePlay(); eM |= elModePlay;
     lastTick = pgtime();
     timerID = startTimer(speed2msec[speed]);
-    playStop->setIcon(QIcon("buttons/step.png"));
-  }
-}
+    playStop->setIcon (QIcon(":/step.png")); playStop->setText("stop");
+} }
 void jdlvFrame::ChangeSpeed (int newSpeed)
 {
   speed = newSpeed; if (eM & elModePlay) {  killTimer(timerID);
                        timerID = startTimer(speed2msec[speed]); }
 }
-void jdlvFrame::DoReload() { }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void jdlvFrame::UpdateMag() { QString S; S.sprintf("%+3d",vista->get_mag());
-                                                        magText->setText(S); }
 void jdlvFrame::timerEvent(QTimerEvent *)
 {
-  quint64 tick_time = pgtime(); vista->show_next_gen(); genNo++;
+  elMundo *origWorld = genNo ? nextWorld : primeWorld;
+  quint64 tick_time = pgtime(); vista->show_next_gen(origWorld); genNo++;
   quint64 stop_time = pgtime();
   QString S = QString::number(genNo);
   if (S.length() > 3) S.insert(-3,',');

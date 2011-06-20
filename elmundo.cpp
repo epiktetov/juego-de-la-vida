@@ -242,7 +242,7 @@ void elMundo::pasteGun1 (int atX, int atY, char Aj,
 void elMundo::make4guns(const char *param_string)
 {
   QString params(param_string); params.append(".........");
-  char c, sign[10];                      srand(time(NULL));
+  char c, sign[10];
   int N = 0, i;
   for (i = 0; i < 4; i++) {
     if (('A' <= (c = params[i].unicode()) && c <= 'Z') ||
@@ -292,31 +292,26 @@ void elSalvador::observe (int x, int y, int clr)
   if (x == pX+1 && y == pY && clr == pC) { pX++; pN++; return; }
   int len, i;
   QChar addC = withColors ? CName[pC] : 'o';
-  switch (pN) {
-  case 0:                                        break;
-  case 1:  rle.append(addC);                     break;
+  switch (pN) {                                         // 1st flush previously
+  case 0:                                        break; // observed celss (when
+  case 1:  rle.append(addC);                     break; // applicable)
   case 2:  rle.append(QString(addC)+addC);       break;
   default: rle.append(QString::number(pN)+addC); break;
   }
-  if (y > pY) {
-    switch (( len = y-pY )) {
-    case 0:                    break;
-    case 1:  rle.append("$");  break;
-    case 2:  rle.append("$$"); break;
-    default:
-      if (withColors) rle.append(QString("%1$").arg(len));
-      else                             //
-        while (len--) rle.append("$"); // "withoutColor" means "fully compliant
-    }                                  // with standard RLE", so no $-repeating
-    pX = X0-1;
+  if (y > pY) {                // if Y changed, then generate proper CRs
+    switch (( len = y-pY )) {  //
+      case 0:                                 break;
+      case 1:  rle.append("$");               break;
+      case 2:  rle.append("$$");              break;
+      default: rle.append(QString::number(len)+"$"); } pX = X0-1;
   }
-  switch (( len = x-pX-1 )) {
-  case 0:                                break;
+  switch (( len = x-pX-1 )) {                   // now insert proper number of
+  case 0:                                break; // blanks in the current line
   case 1:  rle.append("b");              break;
   case 2:  rle.append("bb");             break;
   default: rle.append(QString("%1b").arg(len));
   }
-  pX = x; pC = clr;
+  pX = x; pC = clr; // the currently observed cell itself is not flushed!
   pY = y; pN = 1;
   if ((len = rle.length()) > 70) {
     for (i = 70; rle.at(i-1).isDigit(); i--) ;
@@ -328,4 +323,30 @@ void elSalvador::flush (QString line)
 {
   fprintf(stderr, "%s\n", line.cStr());
 }
+//-----------------------------------------------------------------------------
+elRecolorator::elRecolorator(const char *R)
+{
+  QString Rules(R);   Rules.append("........");
+  for (int i = 0; i < elcMax-1; i++)
+    switch (Rules[i].unicode()) {
+    case 'b': cR[i] = elcDefault;   break;
+    case 'r': cR[i] = elcRojo;      break;
+    case 'v': cR[i] = elcVerde;     break;
+    case 'a': cR[i] = elcAzul;      break;
+    case 'x': cR[i] = elcCianico;   break;
+    case 'c': cR[i] = elcCastano;   break;
+    case 'z': cR[i] = elcMagenta;   break;
+    case '%': cR[i] = elcRandomRed; break;
+    case '*': cR[i] = elcRandomAny; break;
+    default:
+    case '.': cR[i] = i;
+}   }
+int elRecolorator::recolor(int, int, int clr)
+{
+  int newClr = cR[clr];
+  switch (newClr) {
+  case elcRandomRed: return (rand() & 1) ? elcRed : elcBlack;
+  case elcRandomAny: return  rand() % elcMax;
+  default:           return newClr;
+} }
 //-----------------------------------------------------------------------------

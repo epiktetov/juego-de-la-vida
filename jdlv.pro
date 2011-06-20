@@ -8,6 +8,7 @@ macx {
   QMAKE_PKGINFO_TYPEINFO = "^epi"
 }
 OBJECTS_DIR = obj
+RESOURCES = jdlv.qrc
 
 unix: QtPLATF = unix
 macx: QtPLATF = macx

@@ -1,5 +1,22 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
   <file>jdlv48.png</file>
+  <file alias="time.png">buttons/time.png</file>
+  <file alias="info.png">buttons/info.png</file>
+  <file alias="eye-half.png">buttons/eye-half.png</file>
+  <file alias="pen-in-box.png">buttons/pen-in-box.png</file>
+  <file alias="empty1.png">buttons/empty1.png</file>
+  <file alias="book.png">buttons/book.png</file>
+  <file alias="reload1.png">buttons/reload1.png</file>
+  <file alias="win-paste.png">buttons/win-paste.png</file>
+  <file alias="windows1.png">buttons/windows1.png</file>
+  <file alias="export-mono.png">buttons/export-mono.png</file>
+  <file alias="export-blue.png">buttons/export-blue.png</file>
+  <file alias="zoom3.png">buttons/zoom3.png</file>
+  <file alias="full-size.png">buttons/full-size.png</file>
+  <file alias="step.png">buttons/step.png</file>
+  <file alias="step-back.png">buttons/step-back.png</file>
+  <file alias="go-forward.png">buttons/go-forward.png</file>
+  <file alias="fast-forward.png">buttons/fast-forward.png</file>
 </qresource>
 </RCC>

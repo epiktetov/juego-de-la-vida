@@ -35,10 +35,11 @@ protected:
   // 'add' method should be optimized for case when cells added in order from
   //     left to right and from top to bottom (since that's how it'll be used)
 public:
-  virtual void add   (int x, int y, int color) = 0;
-  virtual void toggle(int x, int y, int color) = 0;
-  virtual void clear (int x, int y)            = 0;
-  virtual void clearTheWorld (void)            = 0;
+  virtual void add    (int x, int y, int color) = 0;
+  virtual void toggle (int x, int y, int color) = 0;
+  virtual bool recolor(int x, int y, int color) = 0; // returns false if cannot
+  virtual void clear  (int x, int y)            = 0; //   perform the operation
+  virtual void clearTheWorld  (void)            = 0;
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   int XvMin, XvMax, // position of the view frame (absolute coordinates)
       YvMin, YvMax; //
@@ -46,19 +47,22 @@ public:
   virtual void getFitFrame(int &xmin, int &xmax, int &ymin, int &ymax) = 0;
   virtual void show(elVista &ev);
   virtual void show(elVista &ev, int xmin, int xmax, int ymin, int ymax);
-  //
+  //        ^
   // Although 'show' might be implemented using universal iterator described
   // below, method is virtual to allow optimization (it may be faster to show
-  // cells in different order)
+  // cells in different order - that may not work for other observers, though)
   //
   virtual void iterate(elObservador &eo)                = 0;
   virtual void iterate(elObservador &eo, int colorMask) = 0;
   virtual void iterate(elObservador &eo, int xmin, int xmax,
                                          int ymin, int ymax) = 0;
-  // nextGen returns: 0 all dead
-  //                  1 stable, 2 otherwise
+  // Iterator to modify the world:
   //
-  virtual int nextGeneration(elVista *ev = 0) = 0;
+  virtual void changeTheWorld(elObservador &eo)                       = 0;
+  virtual int nextGeneration(elVista *ev = 0, elMundo *fromWorld = 0) = 0;
+  //      ^
+  // returns: 0 all dead            | not all implementations may properly
+  //          1 stable, 2 otherwise | detect "stable" condition (return 2)
 //
 // just for fun (TODO: move to Lua script)
 //
@@ -71,7 +75,10 @@ class elObservador
 {
 public:
   virtual void observe(int x_abs, int y_abs, int clr) = 0;
-};
+  virtual int  recolor(int x_abs, int y_abs, int clr)
+  {
+    observe(x_abs, y_abs, clr); return clr; // to kill the cell, return elcDead
+} };
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 class elSalvador : public elObservador
 {
@@ -80,8 +87,17 @@ class elSalvador : public elObservador
 public:
   elSalvador(elMundo& mundoParaSalvar) : world(mundoParaSalvar) { }
   void save(bool conColores);
-  virtual void flush(QString line);
-  virtual void observe(int x_abs, int y_abs, int clr);
+  virtual void flush (QString line);
+  virtual void observe(int x, int y, int clr);
+};
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+class elRecolorator : public elObservador // recolors the observed word by the
+{                                         // rule:
+  int cR[elcMax];                         //       newColor = rcRules[oldColor]
+public:
+  elRecolorator(const char *recolorRules);
+  virtual int  recolor(int x, int y, int clr);
+  virtual void observe(int x, int y, int clr) { recolor(x,y,clr); }
 };
 /*---------------------------------------------------------------------------*/
 #endif                                                /* EL_MUNDO_H_INCLUDED */

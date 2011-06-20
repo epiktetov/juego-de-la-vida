@@ -1,0 +1,7 @@
+#D Acorn -- the most vigorously growing 7-cell "methuselah" pattern.
+x = 7, y = 3
+bo$3bo$aabb3o!
+
+Color of the resulting population fully determined by 2 cells that are
+born at generation 1 right above blue cells (since they full siblings,
+sharing all 3 parents, the final result is always monochromatic)

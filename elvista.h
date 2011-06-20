@@ -17,11 +17,12 @@ class elVista : public QWidget, public elObservador
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 public:    elVista(jdlvFrame *padre, elMundo *mirandoAlMundo);
   virtual ~elVista();
+  void lookAtThis(elMundo *mirandoAlMundo);
   static void initColors(void);
          void observe(int x_abs, int y_abs, int color); // from elObservador
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   void makePixmap(int xmin, int ymin, int w, int h);
-  void show_next_gen();
+  void show_next_gen (elMundo *startingFrom = NULL);
   int Xvis2abs(int x_vis), Yvis2abs(int y_vis),
       Xabs2vis(int x_abs), Yabs2vis(int y_abs);
 protected:
@@ -36,6 +37,7 @@ public:
   inline int get_mag() { // positive mag means pixels_per_cell > 1,
     return mag;          //     negative means cells_per_pixel > 1
   }
+  void updateTheWorld() { resizeVista(); update(); }
   void resize_to_fit();
   void resizeEvent(QResizeEvent *ev);
   void paintEvent (QPaintEvent  *ev);

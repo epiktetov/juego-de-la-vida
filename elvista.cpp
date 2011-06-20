@@ -56,6 +56,11 @@ elVista::elVista (jdlvFrame *father, elMundo *lookingAtWorld)
   palette.setColor(QPalette::WindowText, visColors[elvcInfoText]);
   setPalette(palette);
 }
+void elVista::lookAtThis (elMundo *lookAtMe)
+{
+  lookAtMe->setFrame(world->XvMin, world->XvMax, world->YvMin, world->YvMax);
+  world = lookAtMe; // do not use updateTheWorld - new world not populated yet
+}
 elVista::~elVista() { if (pixmap) delete pixmap; }
 //-----------------------------------------------------------------------------
 void elVista::observe (int x_abs, int y_abs, int color)
@@ -68,10 +73,10 @@ void elVista::observe (int x_abs, int y_abs, int color)
     pt->drawRect(x_vis, y_vis, cell_size, cell_size);
 } }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void elVista::show_next_gen()
+void elVista::show_next_gen (elMundo *orig) // if orig == NULL, 'world' is used
 {
-  QPainter dc(pixmap);         pt = &dc;
-  world->nextGeneration(this); pt = NULL; update();
+  QPainter dc(pixmap);               pt = &dc;
+  world->nextGeneration(this, orig); pt = NULL; update();
 }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::makePixmap (int xmin, int ymin, int w, int h)
@@ -203,11 +208,19 @@ void elVista::paintEvent (QPaintEvent*)
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::mousePressEvent (QMouseEvent *ev)
 {
+  int x_abs, y_abs;
   switch (ev->type()) {
-  case QEvent::MouseButtonPress: break;
+  case QEvent::MouseButtonPress:
+    if (dad->isProtected()) return;
+    x_abs = Xvis2abs(ev->x());
+    y_abs = Yvis2abs(ev->y());
+    if (ev-> modifiers() & Qt::ShiftModifier)
+              world->toggle (x_abs, y_abs, dad->getCurrentColor());
+    else if (!world->recolor(x_abs, y_abs, dad->getCurrentColor())) break;
+    ev->accept();                                 updateTheWorld(); break;
   case QEvent::MouseButtonDblClick:
     x_center = Xvis2abs(ev->x());
-    y_center = Yvis2abs(ev->y()); resizeVista(); update(); ev->accept();
+    y_center = Yvis2abs(ev->y()); ev->accept(); updateTheWorld();
   default:
     break;
 } }
@@ -222,7 +235,6 @@ void elVista::wheelEvent (QWheelEvent *ev)
     int delta = -ev->delta()/2;
     if (ev->orientation() == Qt::Vertical)
          y_center = Yvis2abs(Yabs2vis(y_center)+delta);
-    else x_center = Xvis2abs(Xabs2vis(x_center)+delta);
-    resizeVista();                            update();
+    else x_center = Xvis2abs(Xabs2vis(x_center)+delta); updateTheWorld();
 } }
 //-----------------------------------------------------------------------------

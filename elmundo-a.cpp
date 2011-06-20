@@ -54,8 +54,8 @@ class elMundoA : public elMundo
 /* Diamoeba b35678s5678); however, the algorithm of color inheritance must */
 /* be different anyway.                                                    */
 
-  int finalized; /* indicates whether the values are finalized (that is,   */
-                 /* whether neighborhood information is up to date or not) */
+  bool finalized; /* indicates whether the values are finalized - that is, */
+                  /* whether neighborhood information is up to date or not */
 
   static const int cell_alive_mask = 0x3,
                    left_alive_mask = 0x2, right_alive_mask = 0x1;
@@ -179,7 +179,7 @@ public:
     Ulen  =  0; Uval = MALLOCxN(int, Usize); Wsize = Wlen = 0;
                                              Esize = Elen = 0;
     setRules(0x8,0xC);                       Ssize = Slen = 0;
-    setColorRules(NULL);   finalized = 0;    Msize = Mlen = 0;
+    setColorRules(NULL);  finalized = false; Msize = Mlen = 0;
   }
   ~elMundoA()
   {             if (Nsize) { free(Npos); free(Nval); }
@@ -213,49 +213,54 @@ private:
       if (XvMin <= x && x <= XvMax) V->observe(x, Y(pos), clr+elcvDead);
   } }
 /*---------------------------------------------------------------------------*/
-                    /* Update neighbor counters and generates N, W, E arrays */
-  void passZero()   /* for initial configuration stored in Upos/val arrays   */
+/* Update neighbor counters and generates N, W, E arrays for initial config, */
+/* stored in Upos/val arrays of given instance of the world (may be the same */
+/*                                                           as current one) */
+  void passZero (elMundo *generic_ref)
   {
     int i, clr, Uincr, /* what we should add to the value of orginal cell */
                 NvalL, /* the value for N(-1) cell                        */
                 NvalR; /* the value for N(+1) cell (see diagram above)    */
 
-    adjustSize(Nsize, Npos, Nval, 2*Ulen+2);
-    adjustSize(Wsize, Wpos, Wval,   Ulen+2);
-    adjustSize(Esize, Epos, Eval,   Ulen+2);
+    elMundoA *ref  =  static_cast<elMundoA *>(generic_ref);
+    adjustSize(Nsize, Npos, Nval, 2*ref->Ulen+2); Nlen = 0;
+    adjustSize(Wsize, Wpos, Wval,   ref->Ulen+2); Wlen = 0;
+    adjustSize(Esize, Epos, Eval,   ref->Ulen+2); Elen = 0;
 
-    for (i = Nlen = Wlen = Elen = 0; i < Ulen; i++) {
-      int val = Uval[i];
-      if ((val & cell_alive_mask) != 0) {
-        int pos = Upos[i];
-        if ((val & left_alive_mask) != 0) {
+    for (i = 0; i < ref->Ulen; i++) {     int val = ref->Uval[i];
+      if ((val & cell_alive_mask) != 0) { int pos = ref->Upos[i];
+    // ^
+    // need "either cell alive" condition only for optimization
+    //
+        if ((val & left_alive_mask) == 0) Uincr = NvalL = NvalR = 0;
+        else {
           clr = leftCOLOR(val);
-          NvalL = both_incr[clr]; Uincr = Wval[Wlen]   = right_incr[clr];
-          NvalR = left_incr[clr];         Wpos[Wlen++] = pos + Wshift;
+          NvalL = both_incr[clr]; Uincr = (Wval[Wlen]   = right_incr[clr]);
+          NvalR = left_incr[clr];          Wpos[Wlen++] = pos + Wshift;
         }
-        else Uincr = NvalL = NvalR = 0;
-
         if ((val & right_alive_mask) != 0) {
           clr = rightCOLOR(val);
           NvalL += right_incr[clr]; Uincr += (Eval[Elen]   = left_incr[clr]);
           NvalR += both_incr [clr];           Epos[Elen++] = pos + Eshift;
         }
-        Uval[i] += Uincr; Npos[Nlen] = pos + Nshift;     Nval[Nlen++] = NvalL;
-                          Npos[Nlen] = pos + NshiftPlus; Nval[Nlen++] = NvalR;
-  } } }
-                           /* Update cell status (i.e. kill some cells and */
-  void passOne(elVista *V) /* give a birth to others) and generates E,N,W  */
-  {                        /* arrays with increments for neighboring cells */
+        Uval[i] = ref->Uval[i] + Uincr;
+        Upos[i] = ref->Upos[i];
+        Npos[Nlen] = pos + Nshift;     Nval[Nlen++] = NvalL;
+        Npos[Nlen] = pos + NshiftPlus; Nval[Nlen++] = NvalR;
+    } }
+    Ulen = ref->Ulen;
+  }
+                            /* Update cell status (i.e. kill some cells and */
+  void passOne (elVista *V) /* give a birth to others) and generates E,N,W  */
+  {                         /* arrays with increments for neighboring cells */
 
     int i, action, clr, Uincr, NvalL, NvalR;
     adjustSize(Nsize, Npos, Nval, 2*Ulen+2);
     adjustSize(Wsize, Wpos, Wval,   Ulen+2);
     adjustSize(Esize, Epos, Eval,   Ulen+2);
 
-    for (i = Nlen = Wlen = Elen = 0; i < Ulen; i++) {
-      int val = Uval[i];
-      if ((action = rules[val & rule_mask]) != 0) {
-        int pos = Upos[i];
+    for (i = Nlen = Wlen = Elen = 0; i < Ulen; i++) { int val = Uval[i];
+      if ((action = rules[val & rule_mask]) != 0) {   int pos = Upos[i];
         switch (action) {
         case left_born:
         case left_born_right_dies:
@@ -403,32 +408,27 @@ private:
   }
 /*---------------------------------------------------------------------------*/
 public:                           /* Calculate new generation, with updating */
-  int nextGeneration(elVista *V)  /* the universe using given Vista (actual  */
-  {                               /* update is made during the first pass)   */
-    if (!finalized) {
-      passZero(); passTwo(); passThree(); finalized = 1;
-#if 0
-      V->update(); return 2;
-#endif
-    }
-    passOne(V);   passTwo(); passThree();
-    return 2;
+  int nextGeneration(elVista *V,  /* the universe using given Vista (actual  */
+                     elMundo *M)  /*   update is made during the first pass) */
+  {
+    if (!finalized)
+      { passZero(M ? M : this); finalized = true; passTwo(); passThree(); }
+                                      passOne(V); passTwo(); passThree();
+    return Ulen ? 2 : 0;
   }
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
 private:
-  enum cell_location {
-    new_insert = 1,
-    new_at_end = 2,
-    update_one = 3
-  };
+  enum cell_location { new_insert = 1,
+                       new_at_end = 2, update_one = 3 };
+
   cell_location find_cell_location(int x, int y, int &where, bool &is_left)
   {
     int last_pos, pos = pack(x, y),
                     i = (pos & xone+yone);
     is_left =  (i == 0 || i == xone+yone);
 
-    if (finalized) { passZilch();   finalized = 0; }
-    if (Ulen == 0) { where = 0; return new_at_end; }
+    if (finalized) { passZilch(); finalized = false; }
+    if (Ulen == 0) { where = 0;   return new_at_end; }
     else {
       if (!is_left) pos--;
       if (pos > Upos[Ulen-1]) { where = Ulen; return new_at_end; }
@@ -437,8 +437,7 @@ private:
           if (pos == (last_pos = Upos[i])) { where = i;   return update_one; }
           if (pos >   last_pos)            { where = i+1; return new_insert; }
         }
-        where = 0;
-        return new_insert;
+        where = 0; return new_insert;
   } } }
 public:
   void add(int x, int y, int clr)
@@ -477,19 +476,25 @@ public:
       break;
     case update_one:
       if (is_left) {
-        if (Uval[n] & left_alive_mask) {
-          if (leftCOLOR(Uval[n]) == clr) Uval[n] &= ~left_cell_mask;
-          else Uval[n] = (Uval[n] & ~left_cell_mask)|leftVALUE(clr);
-        }
-        else Uval[n] |= leftVALUE(clr);
+        if (Uval[n] & left_alive_mask) Uval[n] &= ~left_cell_mask;
+        else                           Uval[n] |=  leftVALUE(clr);
       }
-      else {
-        if (Uval[n] & right_alive_mask) {
-          if (rightCOLOR(Uval[n]) == clr) Uval[n] &= ~right_cell_mask;
-          else Uval[n] = (Uval[n] & ~right_cell_mask)|rightVALUE(clr);
-        }
-        else Uval[n] |= rightVALUE(clr);
-  } } }
+      else { if (Uval[n] & right_alive_mask) Uval[n] &= ~right_cell_mask;
+             else                            Uval[n] |=  rightVALUE(clr); }
+  } }
+  bool recolor(int x, int y, int clr) // returns false if cannot recolor, that
+  {                                   // is, when cell at (x,y) is not alive
+    bool is_left;
+    int n;
+    if (find_cell_location(x, y, n, is_left) != update_one) return false;
+    if (is_left) {
+      if (Uval[n] & left_alive_mask)
+        { Uval[n] = (Uval[n] & ~left_cell_mask)|leftVALUE(clr); return true; }
+    }
+    else if (Uval[n] & right_alive_mask)
+      { Uval[n] = (Uval[n] & ~right_cell_mask)|rightVALUE(clr); return true; }
+ /* else */                                                     return false;
+  }
   void clear(int x, int y)
   {
     bool is_left;
@@ -501,26 +506,20 @@ public:
                                            Uval[i-1] = Uval[i]; }
         Ulen--;
   } } }
-  void clearTheWorld(void)
-  {
-    Ulen = 0;
-  }
+  void clearTheWorld(void) { Ulen = 0; finalized = false; }
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   void iterate(elObservador &eo)
   {
-    for (int i = 0; i < Ulen; i++) {
-      int val = Uval[i], x = X(Upos[i]),
-                         y = Y(Upos[i]);
+    for (int i = 0; i < Ulen; i++) { int val = Uval[i], x = X(Upos[i]),
+                                                        y = Y(Upos[i]);
 
       if ((val & left_alive_mask)  != 0) eo.observe(x,   y, leftCOLOR(val));
       if ((val & right_alive_mask) != 0) eo.observe(x+1, y, rightCOLOR(val));
   } }
   void iterate(elObservador &eo, int colorMask)
   {
-    for (int i = 0; i < Ulen; i++) {
-      int val = Uval[i], x = X(Upos[i]),
-                         y = Y(Upos[i]), clr;
-
+    for (int i = 0; i < Ulen; i++) { int val = Uval[i], x = X(Upos[i]),
+                                                        y = Y(Upos[i]), clr;
       if ((val & left_alive_mask) != 0 && 
          ((clr = leftCOLOR(val)) & colorMask)) eo.observe(x, y, clr);
 
@@ -529,15 +528,28 @@ public:
   } }
   void iterate(elObservador &eo, int xmin, int xmax, int ymin, int ymax)
   {
-    for (int i = 0; i < Ulen; i++) {
-      int y = Y(Upos[i]);
-      if (ymin <= y && y <= ymax) {
-        int val = Uval[i], x = X(Upos[i]);
+    for (int i = 0; i < Ulen; i++) { int                y = Y(Upos[i]);
+      if (ymin <= y && y <= ymax) {  int val = Uval[i], x = X(Upos[i]);
         if ((val & left_alive_mask)
                  && xmin <= x && x <= xmax) eo.observe(x, y, leftCOLOR(val));
         x++;
         if ((val & right_alive_mask)
                  && xmin <= x && x <= xmax) eo.observe(x, y, rightCOLOR(val));
+  } } }
+/* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
+  void changeTheWorld(elObservador &eo)
+  {
+    for (int i = 0; i < Ulen; i++) { int val = Uval[i], x = X(Upos[i]), oldClr,
+                                                        y = Y(Upos[i]), newClr;
+      if ((val & left_alive_mask) != 0) {
+        oldClr = leftCOLOR(val);
+        if ((newClr = eo.recolor(x, y, oldClr)) != oldClr)
+          Uval[i] = (Uval[i] & ~left_cell_mask)|leftVALUE(newClr);
+      }
+      if ((val & right_alive_mask) != 0) {
+        oldClr = rightCOLOR(val);
+        if ((newClr = eo.recolor(x+1, y, oldClr)) != oldClr)
+          Uval[i] = (Uval[i] & ~right_cell_mask)|rightVALUE(newClr);
   } } }
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   void getFitFrame(int &xmin, int &xmax, int &ymin, int &ymax)

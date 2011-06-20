@@ -20,14 +20,13 @@ elMode;
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 typedef enum { elcBlack   = 0, elcNegro   = 0, elcDefault  = 0,
                elcBlue    = 1, elcAzul    = 1,
-               elcGreen   = 2, elcVerde   = 2, elcSelected = 2,
-               elcRed     = 4, elcRojo    = 4,
-               elcCyan    = 3, elcCianico = 3,
+               elcGreen   = 2, elcVerde   = 2,
+               elcRed     = 4, elcRojo    = 4, elcRandomRed = 40,
+               elcCyan    = 3, elcCianico = 3, elcRandomAny = 42,
                elcMagenta = 5,
                elcYellow  = 6, elcCastano = 6, elcMax  = 7,
                                                elcDead = 8
 } elColor;
-extern char CName[elcMax+2]; // "oavxrzcX";
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 typedef enum {
   elvcBlack   = 0, elvcOffBlack   =  8, elcvDead = 8,
@@ -43,22 +42,24 @@ elVisColor;
 /*---------------------------------------------------------------------------*/
 class jdlvFrame : public QMainWindow // QDialog
 {
-  Q_OBJECT    elVista *vista; int eM, genNo; bool showTime;
-  QAction *openFile, *reLoad;
+  Q_OBJECT                  QAction *openFile, *reLoad;
   QAction *showTimeCB, *showInfoPB, *modeView, *modeEdit, *setColor,
                                     *pasteClip, *saveBnW, *saveCLR;
   QMenu *colorMenu;
   QLabel *magText, *playGen;
   QAction *newWin;
   QAction  *fitView,  *prevGen, *nextGen, *playStop;
-  int timerID, speed; QSlider *speedSlider;
-public slots:
 
-  void DoReload();
-  void ToggleTime(bool on);
-  void ShowInfo();
-  void PopupColorMenu();
-  void SelectColor(QAction *choice);
+  elMundo *primeWorld, *nextWorld;
+  elVista *vista;
+
+  int eM, genNo, curColor; bool showTime;
+  int timerID, speed; QSlider *speedSlider;
+
+
+public slots:
+  void DoReload(); void ToggleTime(bool on);
+  void ShowInfo(); void PopupColorMenu(); void SelectColor(QAction *choice);
   void PasteClip();
   void SaveBnW();
   void SaveCLR();
@@ -75,6 +76,10 @@ public:    jdlvFrame(elMundo *world);
   void LoadTheWorld(QString filename);
 protected:
   void SetWinTitle();
+  void PreparePlay();
+public:
+  bool isProtected() const { return (eM != elModeEdit || genNo > 0); }
+  int getCurrentColor(void) const                 { return curColor; }
 };
 #ifdef Q_OS_MAC
 class MacEvents : public QObject { Q_OBJECT 
