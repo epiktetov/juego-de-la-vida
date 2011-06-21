@@ -28,21 +28,23 @@ int main(int argc, char *argv[])
 {
   QApplication app(argc,argv); app.setStyle(new jdlvStyle); srand(time(NULL));
   QCoreApplication::setOrganizationDomain("epiktetov.com");
-  QCoreApplication::setOrganizationName("EpiMG");
-  QCoreApplication::setApplicationName("jdlv");
+  QCoreApplication::setOrganizationName("EpiMG");  elMundo::initRegExs();
+  QCoreApplication::setApplicationName("jdlv");    elVista::initColors();
 #ifdef Q_OS_MAC
   app.installEventFilter(new MacEvents);
 #elif defined(UNIX)
   app.setWindowIcon(QIcon(":/jdlv48.png"));
 #endif
-  elMundo::initRegExs(); elMundo *theWorld = new_elMundoA();
-  elVista::initColors();
-  if (argc > 1) {
-    if (strcmp(argv[1],"-4g") == 0) theWorld->make4guns(argv[2]);
-    else                            theWorld->pasteFile(argv[1]);
+  const char *filename = NULL, // TODO: move option4g to Lua script
+             *option4g = NULL;
+  if (argc > 1) { if (strcmp(argv[1],"-4g") == 0) option4g = argv[2];
+                                             else filename = argv[1]; }
+  mainWin = new jdlvFrame(filename);
+  if (option4g) {
+    mainWin->getPrimeWorld()->make4guns(option4g);
+    mainWin->getCurrentVista()->resize_to_fit();
   }
-  mainWin = new  jdlvFrame(theWorld);
-  mainWin->show(); return app.exec();
+  return app.exec();
 }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #ifdef Q_OS_MAC
@@ -73,14 +75,17 @@ public: permanentToolBar(const QString &title, QWidget *parent = 0)
 # define jdlvFONTSIZE  10
 #endif
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-jdlvFrame::jdlvFrame(elMundo *world) : primeWorld(world), nextWorld(NULL),
-  eM(elModeView), genNo(0), curColor(0),
-      timerID(0), speed(3)
+jdlvFrame::jdlvFrame (const char *fileToLoad) : primeWorld(NULL),
+                                                 nextWorld(NULL),
+  worldFilename(fileToLoad),
+  eM(elModeView),  genNo(0), curColor(0),
+      timerID(0),  speed(3)
 {
-  QFont fixedFont(jdlvFONTFACENAME, jdlvFONTSIZE); SetWinTitle();
+  QFont fixedFont(jdlvFONTFACENAME, jdlvFONTSIZE);  SetWinTitle();
         fixedFont.setStyleHint(QFont::TypeWriter);
-  vista = new elVista(this,world);
-  vista->setMinimumSize(720, 480); setCentralWidget(vista);
+  primeWorld = new_elMundoA();
+  vista = new elVista (this, primeWorld); setCentralWidget(vista);
+  vista->setMinimumSize(720, 480);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   QToolBar *bottom = new permanentToolBar("ctrl", this);
   bottom->setFloatable(false);
@@ -185,18 +190,25 @@ jdlvFrame::jdlvFrame(elMundo *world) : primeWorld(world), nextWorld(NULL),
   bottom->addWidget(speedSlider);
   bottom->addAction(playStop);
   addToolBar(Qt::BottomToolBarArea, bottom);
+  //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+  show();
+  raise();
+  if (fileToLoad) LoadTheWorld(fileToLoad);
 }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void jdlvFrame::LoadTheWorld(QString filename)
+void jdlvFrame::LoadTheWorld (QString filename)
 {
-  primeWorld->clearTheWorld();
+  if (eM & elModePlay) DoPlayStop();
+  genNo = 0;  playGen->setText("0");
+  primeWorld->clearTheWorld();            vista->lookAtThis(primeWorld);
   primeWorld->pasteFile(filename.cStr()); vista->resize_to_fit();
-  genNo = 0;       playGen->setText("0");
 }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void jdlvFrame::SetWinTitle()
 {
-  setWindowTitle(QString("juego de la vida %1").arg(jdlvVERSION));
+  QString title = QString("juego de la vida %1").arg(jdlvVERSION);
+  if (!worldFilename.isEmpty()) title.append(Utf8(" • ") + worldFilename);
+  setWindowTitle(title);
 }
 //-----------------------------------------------------------------------------
 void jdlvFrame::ToggleTime(bool on) { if (!on) vista->show_time_info(""); }
@@ -212,14 +224,14 @@ void jdlvFrame::SelectColor (QAction *act) // called from menu action
          vista->updateTheWorld  ();
   }
   else { switch (act->text().at(0).unicode()) {
-    case 'o': curColor = elcDefault; break;
+    case 'b': curColor = elcDefault; break; // -- "blanco"
     case 'r': curColor = elcRojo;    break;
     case 'v': curColor = elcVerde;   break;
     case 'a': curColor = elcAzul;    break;
     case 'x': curColor = elcCianico; break;
     case 'c': curColor = elcCastano; break;
     case 'z': curColor = elcMagenta; break;
-    case 'u':
+    case 'U':
       { elRecolorator uc("ooooooo"); primeWorld->changeTheWorld(uc);
                                           vista->updateTheWorld  (); return; }
     } setColor->setIcon(act->icon());

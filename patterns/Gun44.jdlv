@@ -1,0 +1,9 @@
+#D Single-engine p44 gun by David Buckingham, Oct 1996 (orig: 1992),
+#D improved by Paul Callahan, Feb 1997 and Nicolay Beluchenko, 2004
+x = 42, y = 40
+15bo$3boobb3obboboo5bo$3boobbooboboboobobobo3boo$5b3o6bo4bobboobbo$5bo
+17boo$5bo17b3o$$15b3o$10boo$10boo3bobo$16bo$30boo$30bo$14bo3bo9bobo$
+13bo5bo8boo$bo$boo11bo3bo13boo7bo$15b3o14boo5b3o$38bo$38boo3$15borr$bo
+o11bo3bo$bo$13bo5bo$14bo3bo3$16bo$10boo3bobo$10boo$15b3o13boo$31bo$5bo
+17b3o6b3o$5bo17boo9bo$5b3o6bo4bobboobbo$3boobbooboboboobobobo3boo$3boo
+bb3obboboo5bo$15bo!

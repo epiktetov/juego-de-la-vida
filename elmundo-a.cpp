@@ -31,19 +31,19 @@ class elMundoA : public elMundo
   static inline int X(int pos) { return  (pos & xmask)            - zerox; }
   static inline int Y(int pos) { return ((pos & ymask) >> yshift) - zeroy; }
 
-  int *Uval; /*             Value: XXXR XGXB xxxr xgxb RGBr gbnn nnmm mmLR */
+  int *Uval; /*             Value: XXXB XGXR xxxb xgxr BGRb grnn nnmm mmLR */
 /*                                                                         */
-/* Data for RIGHT cell in pair:    .... .... xxxr xgxb ...r gb.. ..mm mm.R */
+/* Data for RIGHT cell in pair:    .... .... xxxb xgxr ...b gr.. ..mm mm.R */
 /*   "cell's alive" flag           .... .... .... .... .... .... .... ...R */
 /*   number of alive neighbors     .... .... .... .... .... .... ..mm mm.. */
-/*   color genes                   .... .... .... .... ...r gb.. .... .... */
-/*   sum of color genes (*)        .... .... xxxr xgxb .... .... .... .... */
+/*   color genes                   .... .... .... .... ...b gr.. .... .... */
+/*   sum of color genes (*)        .... .... xxxb xgxr .... .... .... .... */
 /*                                                                         */
-/* Data for LEFT cell in pair:     XXXR XGXB .... .... RGB. ..nn nn.. ..L. */
+/* Data for LEFT cell in pair:     XXXB XGXR .... .... BGR. ..nn nn.. ..L. */
 /*   "cell's alive" flag           .... .... .... .... .... .... .... ..L. */
 /*   number of alive neighbors     .... .... .... .... .... ..nn nn.. .... */
-/*   color genes                   .... .... .... .... RGB. .... .... .... */
-/*   sum of color genes (*)        XXXR XGXB .... .... .... .... .... .... */
+/*   color genes                   .... .... .... .... BGR. .... .... .... */
+/*   sum of color genes (*)        XXXB XGXR .... .... .... .... .... .... */
 /*                                                                         */
 /* (*) Because of overflow, we can't tell 4 blue neighbors from 1 green;   */
 /*     but we don't have to - for new cell to be born, the position should */
@@ -108,9 +108,9 @@ private:
   static int const rgb_shift_left  = 13;  /* shifts required to put RGB into */
   static int const rgb_shift_right = 10;  /* place for left/right cells      */
   static int const colormask       =  7;
-  static int const left_cell_mask  = 0xE002; /* RGB. .... .... ..L. */
-  static int const right_cell_mask = 0x1C01; /* ...r gb.. .... ...R */
-  static int const both_cells_mask = 0xFC03; /* RGBr gb.. .... ..LR */
+  static int const left_cell_mask  = 0xE002; /* BGR. .... .... ..L. */
+  static int const right_cell_mask = 0x1C01; /* ...b gr.. .... ...R */
+  static int const both_cells_mask = 0xFC03; /* BGRb gr.. .... ..LR */
 
   static inline int leftCOLOR (int val) { return (val >> rgb_shift_left) &7; }
   static inline int rightCOLOR(int val) { return (val >> rgb_shift_right)&7; }
@@ -129,17 +129,17 @@ public:
     for (r = 0; r < 4; r++) {
       for (g = 0; g < 4; g++) {
         for (b = 0; b < 4; b++) {
-          i = (r << 4) + (g << 2) + b;
-          color = ((r < 2) ? 0 : 4)  /* - color for the cell with 'r' red */
+          i = r + (g << 2) + (b << 4);
+          color = ((r < 2) ? 0 : 1)  /* - color for the cell with 'r' red */
                 + ((g < 2) ? 0 : 2)  /* neighbors, 'g' green and 'b' blue */
-                + ((b < 2) ? 0 : 1); /* ones...                           */
+                + ((b < 2) ? 0 : 4); /* ones...                           */
           if (color == 7) color = 0; /* ... but white is forbidden        */
           color_rules[i] = color;
     } } }
     for (i = 0; i < 8; i++) {
-      r = (i & 4);
+      r = (i & 1);
       g = (i & 2);
-      b = (i & 1); clr_incr = (r << 2) + (g << 1) + b;
+      b = (i & 4); clr_incr = r + (g << 1) + (b << 2);
 
       left_incr [i] = (clr_incr << left_rxgxb_shift)  + 0x40;
       right_incr[i] = (clr_incr << right_rxgxb_shift) +  0x4;

@@ -13,19 +13,19 @@ static  QColor visColors[elvcMax]; /* indexed by elVisColor enum, see jdlv.h */
 void elVista::initColors(void)
 {
   visColors[ 0].setHsvF(  0.0/360,0.0,  0.0); // ... black
-  visColors[ 8].setHsvF(200.0/360,0.333,1.0); // dead black cell
-  visColors[ 1].setHsvF(220.0/360,1.0,  0.6); // ..B blue
-  visColors[ 9].setHsvF(220.0/360,0.25, 1.0); // ..B blue dead
+  visColors[ 8].setHsvF(200.0/360,0.333,1.0); // black ghost
+  visColors[ 1].setHsvF(  0.0/360,1.0,  0.6); // ..R red
+  visColors[ 9].setHsvF(  0.0/360,0.16, 1.0); // ..R red
   visColors[ 2].setHsvF(120.0/360,0.8,  0.5); // .G. green
   visColors[10].setHsvF(120.0/360,0.25, 1.0); // .G. green
-  visColors[ 3].setHsvF(180.0/360,1.0,  0.4); // .GB cyan
-  visColors[11].setHsvF(180.0/360,0.25, 0.9); // .GB cyan
-  visColors[ 4].setHsvF(  0.0/360,1.0,  0.6); // R.. red
-  visColors[12].setHsvF(  0.0/360,0.16, 1.0); // R.. red
-  visColors[ 5].setHsvF(300.0/360,1.0,  0.4); // R.B magenta
-  visColors[13].setHsvF(300.0/360,0.16, 1.0); // R.B magenta
-  visColors[ 6].setHsvF( 40.0/360,1.0,  0.4); // RG. yellow
-  visColors[14].setHsvF( 40.0/360,0.25, 0.9); // RG. yellow
+  visColors[ 3].setHsvF( 40.0/360,1.0,  0.4); // .GR yellow
+  visColors[11].setHsvF( 40.0/360,0.25, 0.9); // .GR yellow
+  visColors[ 4].setHsvF(220.0/360,1.0,  0.6); // B.. blue
+  visColors[12].setHsvF(220.0/360,0.25, 1.0); // B.. blue
+  visColors[ 5].setHsvF(300.0/360,1.0,  0.4); // B.R magenta
+  visColors[13].setHsvF(300.0/360,0.16, 1.0); // B.R magenta
+  visColors[ 6].setHsvF(180.0/360,1.0,  0.4); // BG. cyan
+  visColors[14].setHsvF(180.0/360,0.25, 0.9); // BG. cyan
   visColors[ 7].setHsvF(  0.0/360,1.0,  1.0); // xxx not used
   visColors[15].setHsvF(  0.0/360,1.0,  1.0); // xxx not used
   visColors[elvcGrid] = QColor("white");
@@ -35,10 +35,10 @@ void elVista::initColors(void)
   QPixmap blank("buttons/empty1.png");
   QRect colorBlock(5,5,11,11);
   QPainter dc(&blank);                   enBlancoIco  = new QIcon(blank);
-  dc.fillRect(colorBlock, visColors[4]); enRojoIco    = new QIcon(blank);
-  dc.fillRect(colorBlock, visColors[6]); enCastanoIco = new QIcon(blank);
+  dc.fillRect(colorBlock, visColors[1]); enRojoIco    = new QIcon(blank);
   dc.fillRect(colorBlock, visColors[2]); enVerdeIco   = new QIcon(blank);
-  dc.fillRect(colorBlock, visColors[1]); enAzulIco    = new QIcon(blank);
+  dc.fillRect(colorBlock, visColors[3]); enCastanoIco = new QIcon(blank);
+  dc.fillRect(colorBlock, visColors[4]); enAzulIco    = new QIcon(blank);
 }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 elVista::elVista (jdlvFrame *father, elMundo *lookingAtWorld)

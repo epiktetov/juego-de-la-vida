@@ -330,7 +330,7 @@ elRecolorator::elRecolorator(const char *R)
   QString Rules(R);   Rules.append("........");
   for (int i = 0; i < elcMax; i++)
     switch (Rules[i].unicode()) {
-    case 'b': cR[i] = elcDefault;   break;
+    case 'o': cR[i] = elcDefault;   break;
     case 'r': cR[i] = elcRojo;      break;
     case 'v': cR[i] = elcVerde;     break;
     case 'a': cR[i] = elcAzul;      break;
@@ -347,7 +347,7 @@ int elRecolorator::recolor(int, int, int clr)
   int newClr = cR[clr];
   switch (newClr) {
   case elcRandomRed: return (rand() & 1) ? elcRed : elcBlack;
-  case elcRandomAny: return  rand() % elcMax;
+  case elcRandomAny: return  rand() % 5;
   default:           return newClr;
 } }
 //-----------------------------------------------------------------------------

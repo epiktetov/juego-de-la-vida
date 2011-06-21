@@ -1,0 +1,13 @@
+#C Noam Elkies, Jun 1997 (with improved sparkers found
+#C by Karel Suhajda, Jason Summers, and David Eppstein)
+x = 44, y = 32
+24bobbo$22b6o$18boobo8bo$14boobobobob8obbo$12b3oboo3bobo7b3o$11bo4b3ob
+bo3bo3boo$12b3o3boob4obo3boboo$13bobo3bo5bo4bobbo4boobo$11bo8boboobboo
+bboo5boboobo$11b5ob4obo4b3o7bo4bo$16boo4bo4bob3obboobobooboo$13b5ob3o
+4booboo3bobobobobo$12bo5boo4booboboo5bo5bo$13b5o6boobo3bo3bobobooboo$b
+ooboo9boobbo5bobo4bobb3obobo$bboboboboboo3b3obo6bobbobo4b3obbo$bobbo7b
+o6boo3b3o8boboboo$b3obbo4boo11bo10bo$6b4obo17boo4boo$3boobo6bo14bo3bob
+boo$bbo4bo3bo16bo6boo$bb3obo4bo16bo3bobbo$12bo6bo9boo4boboboo$bb3obo4b
+o8brr14b3obbo$bbo4bo3bo7bo15b3obobo$3boobo6bo21bobobooboo$6b4obo24bo5b
+o$b3obbo4boo21bobobobobo$bobbo7bo9boo10boobobooboo$bboboboboboo10bo14b
+o4bo$booboo17b3o11boboobo$25bo12boobo!

@@ -18,44 +18,42 @@ typedef enum {
 }
 elMode;
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-typedef enum { elcBlack   = 0, elcNegro   = 0, elcDefault  = 0,
-               elcBlue    = 1, elcAzul    = 1,
-               elcGreen   = 2, elcVerde   = 2,
-               elcRed     = 4, elcRojo    = 4, elcRandomRed = 40,
-               elcCyan    = 3, elcCianico = 3, elcRandomAny = 42,
+typedef enum { elcBlack   = 0, elcNegro   = 0, elcDefault   =  0,
+               elcRed     = 1, elcRojo    = 1,
+               elcGreen   = 2, elcVerde   = 2, elcRandomRed = 40,
+               elcBlue    = 4, elcAzul    = 4, elcRandomAny = 42,
+               elcYellow  = 3, elcCastano = 3,
                elcMagenta = 5,
-               elcYellow  = 6, elcCastano = 6, elcMax  = 7,
-                                               elcDead = 8
+               elcCyan    = 6, elcCianico = 6, elcMax = 7, elcDead = 8
 } elColor;
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 typedef enum {
   elvcBlack   = 0, elvcOffBlack   =  8, elcvDead = 8,
-  elvcBlue    = 1, elvcOffBlue    =  9,
+  elvcRed     = 1, elvcOffRed     =  9,
   elvcGreen   = 2, elvcOffGreen   = 10, elvcBackground = 16,
-  elvcRed     = 4, elvcOffRed     = 12, elvcGrid       = 17,
-  elvcCyan    = 3, elvcOffCyan    = 11, elvcInfoText   = 18,
+  elvcYellow  = 3, elvcOffYellow  = 11, elvcGrid       = 17,
+  elvcBlue    = 4, elvcOffBlue    = 12, elvcInfoText   = 18,
   elvcMagenta = 5, elvcOffMagenta = 13,
-  elvcYellow  = 6, elvcOffYellow  = 14,
+  elvcCyan    = 6, elvcOffCyan    = 14,
   elvcWhite   = 7, elvcOffWhite   = 15, elvcMax = 19
 }
 elVisColor;
 /*---------------------------------------------------------------------------*/
 class jdlvFrame : public QMainWindow // QDialog
 {
-  Q_OBJECT                  QAction *openFile, *reLoad;
+  Q_OBJECT                 elMundo *primeWorld, *nextWorld;
+  QString   worldFilename; elVista *vista;
+  int eM, genNo, curColor; bool  showTime;
+  int timerID, speed;
+
+  QAction *openFile, *reLoad;
   QAction *showTimeCB, *showInfoPB, *modeView, *modeEdit, *setColor,
                                     *pasteClip, *saveBnW, *saveCLR;
+  QSlider *speedSlider;
   QMenu *colorMenu;
   QLabel *magText, *playGen;
   QAction *newWin;
   QAction  *fitView,  *prevGen, *nextGen, *playStop;
-
-  elMundo *primeWorld, *nextWorld;
-  elVista *vista;
-
-  int eM, genNo, curColor; bool showTime;
-  int timerID, speed; QSlider *speedSlider;
-
 
 public slots:
   void DoReload(); void ToggleTime(bool on);
@@ -71,7 +69,7 @@ public slots:
                       void DoPlayStop(); void timerEvent(QTimerEvent *ev);
   void UpdateMag();
 
-public:    jdlvFrame(elMundo *world);
+public:    jdlvFrame(const char *fileToLoad);
   virtual ~jdlvFrame() { }
   void LoadTheWorld(QString filename);
 protected:
@@ -79,7 +77,9 @@ protected:
   void PreparePlay();
 public:
   bool changesAllowed() const { return (eM == elModeEdit && genNo == 0); }
-  int getCurrentColor(void) const                     { return curColor; }
+  int      getCurrentColor(void) const              { return   curColor; }
+  elVista *getCurrentVista(void) const              { return      vista; }
+  elMundo *getPrimeWorld  (void) const              { return primeWorld; }
 };
 #ifdef Q_OS_MAC
 class MacEvents : public QObject { Q_OBJECT 
