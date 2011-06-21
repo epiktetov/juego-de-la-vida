@@ -7,6 +7,8 @@ macx {
   QMAKE_INFO_PLIST = jdlv.Info.plist
   QMAKE_PKGINFO_TYPEINFO = "^epi"
 }
+CONFIG += debug
+#^keep until version 1.0
 OBJECTS_DIR = obj
 RESOURCES = jdlv.qrc
 

@@ -44,9 +44,9 @@ public:
   void show_time_info (QString info) { timeInfo = info; }
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 protected:
-  void mousePressEvent  (QMouseEvent *ev); QPoint mpLast; // vis coords
-  void mouseMoveEvent   (QMouseEvent *ev); bool isMoving;
-  void mouseReleaseEvent(QMouseEvent *ev);
+  void mousePressEvent  (QMouseEvent *ev); QPoint mpLast; // mouse press (vis)
+  void mouseMoveEvent   (QMouseEvent *ev); QPoint cpLast; // last center (abs)
+  void mouseReleaseEvent(QMouseEvent *ev); bool isMoving;
   void wheelEvent       (QWheelEvent *ev);
 };
 extern QIcon *enBlancoIco, *enRojoIco, *enCastanoIco, *enVerdeIco, *enAzulIco;

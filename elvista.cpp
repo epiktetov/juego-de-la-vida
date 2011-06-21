@@ -185,10 +185,6 @@ void elVista::resize_to_fit (void)
 {
   int                xmin, xmax, ymin, ymax;
   world->getFitFrame(xmin, xmax, ymin, ymax);
-//+
-//fprintf(stderr, "World:x=%d-%d,y=%d-%d(size:%dx%d)\n",
-//                      xmin, xmax, ymin, ymax, width(), height());
-//-
   int mag_by_w = getRequiredMag(xmax-xmin+1, width()),
       mag_by_h = getRequiredMag(ymax-ymin+1, height());
   if (mag_by_w > 1) mag_by_w = getRequiredMag(5*(xmax-xmin+1)/4, width());
@@ -209,7 +205,9 @@ void elVista::paintEvent (QPaintEvent*)
 void elVista::mousePressEvent (QMouseEvent *ev)
 {
   switch (ev->type()) {
-  case QEvent::MouseButtonPress: mpLast = ev->pos();
+  case QEvent::MouseButtonPress:
+    cpLast = QPoint(x_center, y_center);
+    mpLast = ev->pos();
     if (dad->changesAllowed()) {
       int absX = Xvis2abs(ev->x()),
           absY = Yvis2abs(ev->y());
@@ -228,14 +226,8 @@ void elVista::mousePressEvent (QMouseEvent *ev)
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::mouseMoveEvent (QMouseEvent *ev)
 {
-  int dX = ev->x() - mpLast.x();
-  int dY = ev->y() - mpLast.y();
-  x_center = Xvis2abs(Xabs2vis(x_center)-dX);
-  y_center = Yvis2abs(Yabs2vis(y_center)-dY); mpLast = ev->pos();
-//+
-  fprintf(stderr, "dx=(%d,%d),center=(%d,%d)\n", dX, dY,
-                            x_center, y_center);
-//-
+  x_center = cpLast.x() + cells_per_pixel*(mpLast.x()-ev->x())/pixels_per_cell;
+  y_center = cpLast.y() + cells_per_pixel*(mpLast.y()-ev->y())/pixels_per_cell;
   ev->accept();
   if (! isMoving) setCursor(Qt::ClosedHandCursor);
         isMoving = true;         updateTheWorld();

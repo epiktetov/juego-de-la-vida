@@ -175,11 +175,11 @@ private:                         /*     +-------+-------+     */
 public: 
   elMundoA()
   {
-    Usize = 64; Upos = MALLOCxN(int, Usize); Nsize = Nlen = 0;
-    Ulen  =  0; Uval = MALLOCxN(int, Usize); Wsize = Wlen = 0;
-                                             Esize = Elen = 0;
-    setRules(0x8,0xC);                       Ssize = Slen = 0;
-    setColorRules(NULL);  finalized = false; Msize = Mlen = 0;
+    Usize = 4096; Upos = MALLOCxN(int, Usize); Nsize = Nlen = 0;
+    Ulen  =    0; Uval = MALLOCxN(int, Usize); Wsize = Wlen = 0;
+                                               Esize = Elen = 0;
+    setRules(0x8, 0xC);                        Ssize = Slen = 0;
+    setColorRules(NULL);    finalized = false; Msize = Mlen = 0;
   }
   ~elMundoA()
   {             if (Nsize) { free(Npos); free(Nval); }
@@ -222,7 +222,8 @@ private:
                 NvalL, /* the value for N(-1) cell                        */
                 NvalR; /* the value for N(+1) cell (see diagram above)    */
 
-    elMundoA *ref  =  static_cast<elMundoA *>(generic_ref);
+    elMundoA *ref = static_cast<elMundoA *>(generic_ref);
+    adjustSize(Usize, Upos, Uval,   ref->Ulen+2);
     adjustSize(Nsize, Npos, Nval, 2*ref->Ulen+2); Nlen = 0;
     adjustSize(Wsize, Wpos, Wval,   ref->Ulen+2); Wlen = 0;
     adjustSize(Esize, Epos, Eval,   ref->Ulen+2); Elen = 0;
@@ -230,7 +231,7 @@ private:
     for (i = 0; i < ref->Ulen; i++) {     int val = ref->Uval[i];
       if ((val & cell_alive_mask) != 0) { int pos = ref->Upos[i];
     // ^
-    // need "either cell alive" condition only for optimization
+    // need "either cell alive" condition only for optimization (FIXME: do we?)
     //
         if ((val & left_alive_mask) == 0) Uincr = NvalL = NvalR = 0;
         else {
@@ -247,7 +248,11 @@ private:
         Upos[i] = ref->Upos[i];
         Npos[Nlen] = pos + Nshift;     Nval[Nlen++] = NvalL;
         Npos[Nlen] = pos + NshiftPlus; Nval[Nlen++] = NvalR;
-    } }
+      }
+//+
+    else fprintf(stderr, "p0:dead(%d,%d)\n", X(ref->Upos[i]), Y(ref->Upos[i]));
+//-
+    }
     Ulen = ref->Ulen;
   }
                             /* Update cell status (i.e. kill some cells and */
@@ -517,17 +522,17 @@ public:
     for (int i = 0; i < Ulen; i++) { int val = Uval[i], x = X(Upos[i]),
                                                         y = Y(Upos[i]);
 
-      if ((val & left_alive_mask)  != 0) eo.observe(x,   y, leftCOLOR(val));
-      if ((val & right_alive_mask) != 0) eo.observe(x+1, y, rightCOLOR(val));
+      if (val & left_alive_mask)  eo.observe(x,   y, leftCOLOR(val));
+      if (val & right_alive_mask) eo.observe(x+1, y, rightCOLOR(val));
   } }
   void iterate(elObservador &eo, int colorMask)
   {
     for (int i = 0; i < Ulen; i++) { int val = Uval[i], x = X(Upos[i]),
                                                         y = Y(Upos[i]), clr;
-      if ((val & left_alive_mask) != 0 && 
+      if ((val & left_alive_mask) &&
          ((clr = leftCOLOR(val)) & colorMask)) eo.observe(x, y, clr);
 
-      if ((val & right_alive_mask) != 0 &&
+      if ((val & right_alive_mask) &&
          ((clr = rightCOLOR(val)) & colorMask)) eo.observe(x+1, y, clr);
   } }
   void iterate(elObservador &eo, int xmin, int xmax, int ymin, int ymax)
@@ -543,18 +548,23 @@ public:
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   void changeTheWorld(elObservador &eo)
   {
-    for (int i = 0; i < Ulen; i++) { int val = Uval[i], x = X(Upos[i]), oldClr,
-                                                        y = Y(Upos[i]), newClr;
-      if ((val & left_alive_mask) != 0) {
-        oldClr = leftCOLOR(val);
-        if ((newClr = eo.recolor(x, y, oldClr)) != oldClr)
-          Uval[i] = (Uval[i] & ~left_cell_mask)|leftVALUE(newClr);
+    if (finalized) { passZilch(); finalized = false; }
+    int i, j;
+    for (i = j = 0; i < Ulen; i++) {
+      int val = Uval[i], new_clr, new_val = 0, x = X(Upos[i]),
+                                               y = Y(Upos[i]);
+      if (val & left_alive_mask) {
+        new_clr =           eo.recolor(x, y, leftCOLOR(val));
+        if (new_clr != elcDead) new_val = leftVALUE(new_clr);
       }
-      if ((val & right_alive_mask) != 0) {
-        oldClr = rightCOLOR(val);
-        if ((newClr = eo.recolor(x+1, y, oldClr)) != oldClr)
-          Uval[i] = (Uval[i] & ~right_cell_mask)|rightVALUE(newClr);
-  } } }
+      if (val & right_alive_mask) {
+        new_clr =          eo.recolor(x+1, y, rightCOLOR(val));
+        if (new_clr != elcDead) new_val += rightVALUE(new_clr);
+      }
+      if (new_val) { Upos[j]  =  Upos[i];    /* currently it is not possible */
+                     Uval[j++] = new_val; }  /* to add new cells, only death */
+    } Ulen = j;                              /* and recolor works            */
+  }
 /* - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - */
   void getFitFrame(int &xmin, int &xmax, int &ymin, int &ymax)
   {

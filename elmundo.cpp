@@ -242,7 +242,7 @@ void elMundo::pasteGun1 (int atX, int atY, char Aj,
 void elMundo::make4guns(const char *param_string)
 {
   QString params(param_string); params.append(".........");
-  char c, sign[10];
+  char c, sign[10] =                          "....:....";
   int N = 0, i;
   for (i = 0; i < 4; i++) {
     if (('A' <= (c = params[i].unicode()) && c <= 'Z') ||
@@ -327,7 +327,7 @@ void elSalvador::flush (QString line)
 elRecolorator::elRecolorator(const char *R)
 {
   QString Rules(R);   Rules.append("........");
-  for (int i = 0; i < elcMax-1; i++)
+  for (int i = 0; i < elcMax; i++)
     switch (Rules[i].unicode()) {
     case 'b': cR[i] = elcDefault;   break;
     case 'r': cR[i] = elcRojo;      break;
