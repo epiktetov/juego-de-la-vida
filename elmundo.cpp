@@ -269,6 +269,7 @@ void elMundo::make4guns(const char *param_string)
   PASTE_1GUN('a','z',1,x2,y2,Ro,elcYellow);
   PASTE_1GUN('a','z',2,x3,y3,Rx,elcGreen);
   PASTE_1GUN('a','z',3,x4,y4,Rc,elcBlue);
+  add(0,0,0);
   fprintf(stderr, "4guns(%s,%d:%d:%d:%d)\n", sign, gunCfg[sign[5]-'0'].p,
                                                    gunCfg[sign[6]-'0'].p,
                                                    gunCfg[sign[7]-'0'].p,
