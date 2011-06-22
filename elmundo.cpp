@@ -161,23 +161,23 @@ struct gunConfig {
 gunCfg[] =
 {
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - 0 - p0030.lif - -
-  { -80,-66, 66,-80, 80,66, -66,80,
+  { -99,-85, 85,-99, 99,85, -85,99,
     "27bo$26b4o$9boo14boobobo$bo7bobbo11b3obobbobboo$o3boo7bo11boobobo3boo$"
     "o5bo6bo12b4o$b5o7bo7bo5bo$9bobbo9bo$9boo9b3o!", 30 },
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - 1 - p0046.lif - -
-  { -80,-64, 64,-80, 80,64, -64,80,
+  { -99,-83, 83,-99, 99,83, -83,99,
     "40bo$$34b4o5b6o$34boboo7b4o$34bo7boboo$oobboo4bobboo20boo5boo$ooboo6b"
     "oobo$4bobo6bo21boo5boo$5boo4b3o20bo7boboo$34boboo7b4o$5boo4b3o20b4o5b"
     "6o$4bobo6bo$ooboo6boobo$oobboo4bobboo16bo$32bo$30b3o!", 46 },
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - 2 - p0022.lif - -
-  { -80,-70, 70,-80, 80,70, -70,80,
+  { -99,-89, 89,-99, 99,89, -89,99,
     "44bo$$18boo13boo$19bo6b3o3bobbo$19bobo5bo3bo$20boo4bo4bobboboo$27bobbo"
     "bob3o$26b3obobobbo$25boobobbo4bo4boo$31bo3bo5bobo$27bobbo3b3o6bo$23bo"
     "4boo13boo$24bo$oo7bo5boo5b3o$bo6b3o3b3o$bobo6bobboobboo$bboo4boobb5ob"
     "oo$10b3obobobbo9bo$7bobbobob3o10bobo$7boob5obboo4boo3boo$8boobboobbo6b"
     "obo$10b3o3b3o6bo$10boo5bo7boo7bo$35bo$o32b3o!", 22 },
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - 3 - p0023.lif - -
-  { -90,-76, 76,-90, 90,76, -76,90,
+  { -114,-100, 100,-114, 114,100, -100,114,
     "39bo$boo27b3o$boo18boo5bo4bo11boo$28bo5bo10boo$13boo18bo$oo9boobbo15b"
     "oo$oo9b6o$11b4o16boo$24bo8bo$25bobbo5bo$23b3obbo4bo31boo$11b4o15b3o32b"
     "oo$oo9b6o$oo9boobbo$13boo26boo8b3o12boo$41boo8bo3bo10boo$boo48bo4bo$b"
@@ -185,7 +185,7 @@ gunCfg[] =
     "7boo15boo$7boo16boo$20boobboo39boo$40bobo22boo$41boo$41bo$20boobboo$7b"
     "oo16boo7boo$7boo15boo8boo11bo$24bo23bo$46b3o!", 23 },
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - 4 - p0024.lif - -
-  { -80,-80, 80,-80, 80,80, -80,80,
+  { -99,-99, 99,-99, 99,99, -99,99,
     "23bobbo$21b6o$17boobo8bo$13boobobobob8obbo$11b3oboo3bobo7b3o$10bo4b3o"
     "bbo3bo3boo$11b3o3boob4obo3boboo$12bobo3bo5bo4bobbo4boobo$10bo8boboobb"
     "oobboo5boboobo$10b5ob4obo4b3o7bo4bo$15boo4bo4bob3obboobobooboo$12b5ob"
@@ -197,7 +197,7 @@ gunCfg[] =
     "o24bo5bo$3obbo4boo21bobobobobo$obbo7bo9boo10boobobooboo$boboboboboo10b"
     "o8bo5bo4bo$ooboo17b3o6bo4boboobo$24bo4b3o5boobo!", 24 },
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - 5 - p0044.lif - -
-  { -90,-76, 76,-90, 90,76, -76,90,
+  { -109,-95, 95,-109, 109,95, -95,109,
     "14bo$bboobb3obboboo5bo$bboobbooboboboobobobo3boo$4b3o6bo4bobboobbo$4bo"
     "17boo$4bo17b3o$$14b3o$9boo$9boo3bobo$15bo$29boo$29bo$bo11bo3bo9bobo$5b"
     "o6bo5bo8boo$o5bo$ooboobo6bo3bo13boo7bo$5bo8b3o14boo5b3o$37bo$37boo$$"
@@ -206,7 +206,7 @@ gunCfg[] =
     "17b3o6b3o$4bo17boo9bo$4b3o6bo4bobboobbo$bboobbooboboboobobobo3boo$bboo"
     "bb3obboboo5bo$14bo!", 44 },
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - 6 - p0036.lif - -
-  { -93,-96, 96,-93, 93,96, -96,93,
+  { -114,-117, 117,-114, 114,117, -117,114,
     "25bo$25b3o$28bo$27boo$$30bo$29b3o$28bobboo$28bo3bo$30bobo$39boo$27boob"
     "oo6bobbo$29bo6bobbobo$36bo3bo$36bo$28b3o8bo$29boo6boo$29boo4$35boo$27b"
     "oo6boo$26bo8b3o$29bo$25bo3bo$24bobobbo6bo25boo$24bobbo6booboo22bobbo$"
@@ -218,7 +218,7 @@ gunCfg[] =
     "6b3o$bboo6bo3boo6bo$bobo18bo4bo$bo21bobbobo17bo$oo23bobbo18bo$26boo17b"
     "3o!", 36 },
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - 7 - p0060.lif - -
-  { -80,-64, 64,-80, 80,64, -64,80,
+  { -106,-90, 90,-106, 106,90, -90,106,
     "27bo$27b4o$11bo16b4o$10bobo5boo8bobbo5boo$3boo3boo3bo14b4o5boo$3boo3b"
     "oo3bo4boboboo3b4o$8boo3bo5boo3bobbo$10bobo10bo$11bo8bobbo$$26bobo$28bo"
     "$24bo$26bo$25bo$$11boo$11boo4bo$oo6boo6b5oboo$oo5b3o5bobboo4bo$8boo5b"
