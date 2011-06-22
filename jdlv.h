@@ -41,9 +41,9 @@ elVisColor;
 /*---------------------------------------------------------------------------*/
 class jdlvFrame : public QMainWindow // QDialog
 {
-  Q_OBJECT                 elMundo *primeWorld, *nextWorld;
+  Q_OBJECT                 elMundo *primeWorld, *nextWorld;  bool isChanged;
   QString   worldFilename; elVista *vista;
-  int eM, genNo, curColor; bool  showTime;
+  int eM, genNo, curColor;
   int timerID, speed;
 
   QAction *openFile, *reLoad;
@@ -56,6 +56,7 @@ class jdlvFrame : public QMainWindow // QDialog
   QAction  *fitView,  *prevGen, *nextGen, *playStop;
 
 public slots:
+  void OpenFile();
   void DoReload(); void ToggleTime(bool on);
   void ShowInfo(); void PopupColorMenu(); void SelectColor(QAction *choice);
   void PasteClip();
@@ -77,13 +78,14 @@ protected:
   void PreparePlay();
 public:
   bool changesAllowed() const { return (eM == elModeEdit && genNo == 0); }
-  int      getCurrentColor(void) const              { return   curColor; }
-  elVista *getCurrentVista(void) const              { return      vista; }
-  elMundo *getPrimeWorld  (void) const              { return primeWorld; }
+  void notifyOfChange(void);
+  int      getCurrentColor(void) const { return   curColor; }
+  elVista *getCurrentVista(void) const { return      vista; }
+  elMundo *getPrimeWorld  (void) const { return primeWorld; }
 };
 #ifdef Q_OS_MAC
-class MacEvents : public QObject { Q_OBJECT 
-  protected:  bool eventFilter(QObject *obj, QEvent *event); };
+class MacEvents : public QObject { Q_OBJECT
+                  protected: bool eventFilter(QObject *obj, QEvent *event); };
 #endif
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 #define cStr()  toLocal8Bit().data() /* to pass QString value to legacy code */

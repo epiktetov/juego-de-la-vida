@@ -26,8 +26,8 @@ public:    elVista(jdlvFrame *padre, elMundo *mirandoAlMundo);
   int Xvis2abs(int x_vis), Yvis2abs(int y_vis),
       Xabs2vis(int x_abs), Yabs2vis(int y_abs);
 protected:
-  int x_center, mag, xOffset, pixels_per_cell, cell_size,
-      y_center,      yOffset, cells_per_pixel;
+  int x_center, mag, xOffset, pixels_per_cell,      cell_size,
+      y_center,      yOffset, cells_per_pixel; bool draw_halo;
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   int find_closest_mag(int delta_mag);
   void adjust_mag_params         (int  &width_abs, int &height_abs);

@@ -37,8 +37,10 @@ int main(int argc, char *argv[])
 #endif
   const char *filename = NULL, // TODO: move option4g to Lua script
              *option4g = NULL;
-  if (argc > 1) { if (strcmp(argv[1],"-4g") == 0) option4g = argv[2];
-                                             else filename = argv[1]; }
+  if (argc > 1) {
+    if (strcmp(argv[1],"-4g") == 0) option4g = argv[2] ? argv[2] : "*";
+                               else filename = argv[1];
+  }
   mainWin = new jdlvFrame(filename);
   if (option4g) {
     mainWin->getPrimeWorld()->make4guns(option4g);
@@ -77,9 +79,9 @@ public: permanentToolBar(const QString &title, QWidget *parent = 0)
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 jdlvFrame::jdlvFrame (const char *fileToLoad) : primeWorld(NULL),
                                                  nextWorld(NULL),
-  worldFilename(fileToLoad),
-  eM(elModeView),  genNo(0), curColor(0),
-      timerID(0),  speed(3)
+  isChanged(false), worldFilename(fileToLoad),
+                    eM(elModeView),  genNo(0), curColor(0),
+                        timerID(0),  speed(3)
 {
   QFont fixedFont(jdlvFONTFACENAME, jdlvFONTSIZE);  SetWinTitle();
         fixedFont.setStyleHint(QFont::TypeWriter);
@@ -118,9 +120,10 @@ jdlvFrame::jdlvFrame (const char *fileToLoad) : primeWorld(NULL),
   QMenu *file_menu = menuBar()->addMenu("File");
   openFile =  new QAction(QIcon(":/book.png"), QString("Open.."), this);
   reLoad = new QAction(QIcon(":/reload1.png"), QString("reload"), this);
-  connect(reLoad, SIGNAL(triggered()),   this, SLOT(DoReload()));
+  connect(openFile, SIGNAL(triggered()), this, SLOT(OpenFile()));
+  connect(reLoad,   SIGNAL(triggered()), this, SLOT(DoReload()));
   file_menu->addAction(openFile);
-  file_menu->addAction(reLoad); reLoad->setEnabled(false);
+  file_menu->addAction(reLoad);        reLoad->setEnabled(false);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   QMenu *edit_menu = menuBar()->addMenu("Edit");
   pasteClip = new QAction(QIcon(":/win-paste.png"), QString("paste"),    this);
@@ -139,13 +142,14 @@ jdlvFrame::jdlvFrame (const char *fileToLoad) : primeWorld(NULL),
   edit_menu->addAction(saveCLR);
   edit_menu->addAction(saveBnW);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  QString yellow = Utf8("castaño");
   colorMenu = menuBar()->addMenu("Color");
-  colorMenu->addAction(*enBlancoIco, "blanco")->setShortcut(QKeySequence("b"));
-  colorMenu->addAction(*enRojoIco,     "rojo")->setShortcut(QKeySequence("r"));
-  colorMenu->addAction(*enCastanoIco,  yellow)->setShortcut(QKeySequence("c"));
-  colorMenu->addAction(*enVerdeIco,   "verde")->setShortcut(QKeySequence("v"));
-  colorMenu->addAction(*enAzulIco,     "azul")->setShortcut(QKeySequence("a"));
+#define ADD_colorMenu(ico,text,shortcut) \
+  colorMenu->addAction(*ico,text)->setShortcut(QKeySequence(shortcut))
+  ADD_colorMenu(enBlancoIco,            "blanco",     "b");
+  ADD_colorMenu(enRojoIco,              "rojo (red)", "r");
+  ADD_colorMenu(enCastanoIco, Utf8("castaño (brown)"),"c");
+  ADD_colorMenu(enVerdeIco,          "verde (green)", "v");
+  ADD_colorMenu(enAzulIco,             "azul (blue)", "a");
   colorMenu->addSeparator();
   colorMenu->addAction("random Bicolor")->setShortcut(QKeySequence("Ctrl+B"));
   colorMenu->addAction("random Recolor")->setShortcut(QKeySequence("Ctrl+R"));
@@ -198,6 +202,7 @@ jdlvFrame::jdlvFrame (const char *fileToLoad) : primeWorld(NULL),
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void jdlvFrame::LoadTheWorld (QString filename)
 {
+  if (isChanged) reLoad->setEnabled(false); isChanged = false;
   if (eM & elModePlay) DoPlayStop();
   genNo = 0;  playGen->setText("0");
   primeWorld->clearTheWorld();            vista->lookAtThis(primeWorld);
@@ -207,8 +212,27 @@ void jdlvFrame::LoadTheWorld (QString filename)
 void jdlvFrame::SetWinTitle()
 {
   QString title = QString("juego de la vida %1").arg(jdlvVERSION);
-  if (!worldFilename.isEmpty()) title.append(Utf8(" • ") + worldFilename);
+  QString worldName = worldFilename;
+  if (! worldName.isEmpty()) {
+    if (worldName.length() > 32) worldName = Utf8("…") + worldName.right(31);
+                                       title.append(Utf8(" • ") + worldName);
+  }
   setWindowTitle(title);
+}
+//-----------------------------------------------------------------------------
+void jdlvFrame::OpenFile()
+{
+  QString name = QFileDialog::getOpenFileName(this, "Open", worldFilename);
+  if (!name.isEmpty()) { LoadTheWorld(worldFilename = name);
+                                              SetWinTitle(); }
+}
+void jdlvFrame::DoReload()
+{
+  if (!worldFilename.isEmpty()) LoadTheWorld(worldFilename);
+}
+void jdlvFrame::notifyOfChange(void)
+{
+  if (!isChanged) reLoad->setEnabled(true); isChanged = true;
 }
 //-----------------------------------------------------------------------------
 void jdlvFrame::ToggleTime(bool on) { if (!on) vista->show_time_info(""); }
@@ -221,7 +245,7 @@ void jdlvFrame::SelectColor (QAction *act) // called from menu action
   if (act->text().startsWith("random")) {
     elRecolorator rc(act->text().indexOf("Bi") > 0 ? "%%%%%%%" : "*******");
     primeWorld->changeTheWorld(rc);
-         vista->updateTheWorld  ();
+         vista->updateTheWorld  (); notifyOfChange();
   }
   else { switch (act->text().at(0).unicode()) {
     case 'b': curColor = elcDefault; break; // -- "blanco"
@@ -232,9 +256,11 @@ void jdlvFrame::SelectColor (QAction *act) // called from menu action
     case 'c': curColor = elcCastano; break;
     case 'z': curColor = elcMagenta; break;
     case 'U':
-      { elRecolorator uc("ooooooo"); primeWorld->changeTheWorld(uc);
-                                          vista->updateTheWorld  (); return; }
-    } setColor->setIcon(act->icon());
+      { elRecolorator uc("ooooooo"); // everything -> default color ("blanco")
+        primeWorld->changeTheWorld(uc);
+             vista->updateTheWorld  (); notifyOfChange(); return; }
+    }
+    setColor->setIcon(act->icon());
 } }
 void jdlvFrame::PopupColorMenu() { colorMenu->popup(QCursor::pos()); }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -251,7 +277,6 @@ void jdlvFrame::SaveCLR()
   elSalvador saver(*primeWorld);
   saver.save(true);
 }
-void jdlvFrame::DoReload() { }
 void jdlvFrame::NewWindow() { }
 void jdlvFrame::DoFitView() { vista->resize_to_fit(); }
 //-----------------------------------------------------------------------------

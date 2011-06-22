@@ -68,9 +68,15 @@ void elVista::observe (int x_abs, int y_abs, int color)
   int x_vis = Xabs2vis(x_abs), y_vis = Yabs2vis(y_abs);
   if (pt) {
     QBrush brush(visColors[color], Qt::SolidPattern);
-    pt->setBrush(brush);        QPen pen(brush, 1.0);
-    pt->setPen(pen);
-    pt->drawRect(x_vis, y_vis, cell_size, cell_size);
+    pt->setBrush(brush);
+    if (draw_halo && color < elcDead) {
+      QPen pen(visColors[color+8], 1.0);
+      pt->setPen(pen);
+      pt->drawRect(x_vis-1, y_vis-1, cell_size+2, cell_size+2);
+    }
+    else { QPen pen(brush, 1.0);
+           pt->setPen(pen);
+           pt->drawRect(x_vis, y_vis, cell_size, cell_size); }
 } }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::show_next_gen (elMundo *orig) // if orig == NULL, 'world' is used
@@ -156,6 +162,7 @@ void elVista::adjust_mag_params (int &w_abs, int &h_abs)
     cells_per_pixel = -mag; w_abs = -width() *mag;
                             h_abs = -height()*mag;
   }
+  draw_halo = (pixels_per_cell == 5);
   cell_size = (pixels_per_cell >  4) ? pixels_per_cell-2 :
               (pixels_per_cell >  1) ? pixels_per_cell-1 : 1;
 }
@@ -214,7 +221,8 @@ void elVista::mousePressEvent (QMouseEvent *ev)
       if (ev-> modifiers() & Qt::ShiftModifier)
                 world->toggle (absX, absY, dad->getCurrentColor());
       else if (!world->recolor(absX, absY, dad->getCurrentColor())) break;
-      ev->accept();                              updateTheWorld();
+      ev->accept();
+      updateTheWorld(); dad->notifyOfChange();
     }
     break;
   case QEvent::MouseButtonDblClick:
