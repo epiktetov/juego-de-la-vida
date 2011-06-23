@@ -77,13 +77,11 @@ public: permanentToolBar(const QString &title, QWidget *parent = 0)
 # define jdlvFONTSIZE  10
 #endif
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-jdlvFrame::jdlvFrame (const char *fileToLoad) : primeWorld(NULL),
-                                                 nextWorld(NULL),
-  isChanged(false), worldFilename(fileToLoad),
-                    eM(elModeView),  genNo(0), curColor(0),
-                        timerID(0),  speed(3)
+jdlvFrame::jdlvFrame (const char *fileToLoad) : nextWorld(NULL),
+  isChanged(false),
+    eM(elModeView), genNo(0), curColor(0), speed(3), timerID(0)
 {
-  QFont fixedFont(jdlvFONTFACENAME, jdlvFONTSIZE);  SetWinTitle();
+  QFont fixedFont(jdlvFONTFACENAME, jdlvFONTSIZE);
         fixedFont.setStyleHint(QFont::TypeWriter);
   primeWorld = new_elMundoA();
   vista = new elVista (this, primeWorld); setCentralWidget(vista);
@@ -195,18 +193,19 @@ jdlvFrame::jdlvFrame (const char *fileToLoad) : primeWorld(NULL),
   bottom->addAction(playStop);
   addToolBar(Qt::BottomToolBarArea, bottom);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-  show();
-  raise();
   if (fileToLoad) LoadTheWorld(fileToLoad);
+  else                       SetWinTitle();
+  show(); raise();
 }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void jdlvFrame::LoadTheWorld (QString filename)
 {
   if (isChanged) reLoad->setEnabled(false); isChanged = false;
-  if (eM & elModePlay) DoPlayStop();
+  if (eM & elModePlay) DoPlayStop(); worldFilename = filename;
   genNo = 0;  playGen->setText("0");
-  primeWorld->clearTheWorld();            vista->lookAtThis(primeWorld);
-  primeWorld->pasteFile(filename.cStr()); vista->resize_to_fit();
+  primeWorld->clearTheWorld();
+  primeWorld->pasteFile(filename.cStr()); vista->lookAtThis(primeWorld);
+  SetWinTitle();                          vista->resize_to_fit();
 }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void jdlvFrame::SetWinTitle()

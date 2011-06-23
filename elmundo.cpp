@@ -32,7 +32,7 @@ void elMundo::initRegExs(void)
   reCellBlock.setPattern(CBst);
   reDBlifeCmd.setPattern(DBLst);
 }
-char CName[elcMax+2] = "oavxrzcX";
+char CName[elcMax+2] = "orvcazxY";
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elMundo::setRules (QString ruleString)
 {
@@ -278,12 +278,11 @@ void elMundo::make4guns(const char *param_string)
 //-----------------------------------------------------------------------------
 void elSalvador::save (bool conColores)
 {
-  int xmin, xmax, ymin, ymax;
-  world.getFitFrame(xmin, xmax, ymin, ymax);
+  int xmin, xmax, ymin, ymax;      world.getFitFrame(xmin, xmax, ymin, ymax);
   QString line = QString("x = %1, y = %2").arg(xmax-xmin+1).arg(ymax-ymin+1);
   flush(line);
-  X0 = xmin; pX = xmin-1; pC = elcDead; withColors = conColores;
-             pY = ymin;   pN = 0;
+  withColors = conColores; X0 = xmin; pX = xmin-1; pC = elcDead;
+                                      pY = ymin;   pN = 0;
   world.iterate(*this);
   observe(pX+1,pY,elcDead); flush(rle+"!");
 }

@@ -41,10 +41,10 @@ elVisColor;
 /*---------------------------------------------------------------------------*/
 class jdlvFrame : public QMainWindow // QDialog
 {
-  Q_OBJECT                 elMundo *primeWorld, *nextWorld;  bool isChanged;
-  QString   worldFilename; elVista *vista;
+  Q_OBJECT                 elMundo *primeWorld, *nextWorld;
+  QString   worldFilename; elVista *vista;  bool isChanged;
   int eM, genNo, curColor;
-  int timerID, speed;
+  int speed, timerID;
 
   QAction *openFile, *reLoad;
   QAction *showTimeCB, *showInfoPB, *modeView, *modeEdit, *setColor,
