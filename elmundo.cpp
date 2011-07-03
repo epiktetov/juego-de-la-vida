@@ -324,7 +324,8 @@ void elSalvador::flush (QString line)
   fprintf(stderr, "%s\n", line.cStr());
 }
 //-----------------------------------------------------------------------------
-elRecolorator::elRecolorator(const char *R)
+elRecolorator::elRecolorator(const char *R, int x0, int x1, int y0, int y1)
+                                   : xmin(x0), xmax(x1), ymin(y0), ymax(y1)
 {
   QString Rules(R);   Rules.append("........");
   for (int i = 0; i < elcMax; i++)
@@ -340,13 +341,26 @@ elRecolorator::elRecolorator(const char *R)
     case '*': cR[i] = elcRandomAny; break;
     default:
     case '.': cR[i] = i;
-}   }
-int elRecolorator::recolor(int, int, int clr)
+    }
+  if (x0 == x1 && y0 == y1) { xmin = -2147483648; xmax = 2147483647;
+                              ymin = -2147483648; ymax = 2147483647; }
+}
+int elRecolorator::recolor(int x, int y, int clr)
 {
-  int newClr = cR[clr];
-  switch (newClr) {
-  case elcRandomRed: return (rand() & 1) ? elcRed : elcBlack;
-  case elcRandomAny: return  rand() % 5;
-  default:           return newClr;
-} }
+  if (xmin <= x && x <= xmax && ymin <= y && y <= ymax) {
+    int newClr = cR[clr];
+    switch (newClr) {
+    case elcRandomRed: return (rand() & 1) ? elcRed : elcBlack;
+    case elcRandomAny: return  rand() % 5;
+    default:           return newClr;
+  } }
+  else return clr;
+}
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+int elTerminator::recolor(int x, int y, int clr)
+{
+  if ((xmin <= x && x <= xmax && ymin <= y && y <= ymax) == clearInside)
+       return elcDead;
+  else return clr;
+}
 //-----------------------------------------------------------------------------

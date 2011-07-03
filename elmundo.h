@@ -21,9 +21,6 @@ public:    elMundo() { }    static void initRegExs(void);
   virtual void setRules     (QString     ruleString);
   virtual void setRules(int born_bit_mask, int stay_bit_mask) = 0;
 
-//void pasteFile  (const char *pattern, int *width = 0, int *height = 0);
-//void pasteString(const char *pattern, int *width = 0, int *height = 0);
-
   void pasteFile  (QString filename, int atX = 0, int atY = 0);
   void pasteString(QString contents, int atX = 0, int atY = 0,
                                 elMatriz& M = Id, int o_color = elcDefault);
@@ -83,7 +80,7 @@ public:
 class elSalvador : public elObservador
 {
   int X0, pX, pY, pC, pN; bool withColors;
-  elMundo &world;                 QString rle;
+  elMundo &world;             QString rle;
 public:
   elSalvador(elMundo& mundoParaSalvar) : world(mundoParaSalvar) { }
   void save(bool conColores);
@@ -94,10 +91,21 @@ public:
 class elRecolorator : public elObservador // recolors the observed word by the
 {                                         // rule:
   int cR[elcMax];                         //       newColor = rcRules[oldColor]
+  int xmin, xmax, ymin, ymax;
 public:
-  elRecolorator(const char *recolorRules);
+  elRecolorator(const char *recolorRules, int x0=0,int x1=0,int y0=0,int y1=0);
+  virtual void observe(int,   int,   int) { }
   virtual int  recolor(int x, int y, int clr);
-  virtual void observe(int x, int y, int clr) { recolor(x,y,clr); }
+};
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+class elTerminator : public elObservador
+{
+  bool clearInside; int xmin, xmax, ymin, ymax;
+public:
+  elTerminator(bool claroInterior,   int x0,   int x1,   int y0,   int y1)
+      : clearInside(claroInterior), xmin(x0), xmax(x1), ymin(y0), ymax(y1) { }
+  virtual void observe(int,   int,   int) { }
+  virtual int  recolor(int x, int y, int clr);
 };
 /*---------------------------------------------------------------------------*/
 #endif                                                /* EL_MUNDO_H_INCLUDED */

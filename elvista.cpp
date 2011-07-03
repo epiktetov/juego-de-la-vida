@@ -31,6 +31,9 @@ void elVista::initColors(void)
   visColors[elvcGrid] = QColor("white");
   visColors[elvcBackground].setHsvF(200.0/360,0.2,1.0);
   visColors[elvcInfoText]  .setHsvF(200.0/360,0.8,0.8);
+  visColors[elvcRectBorder].setHsvF(240.0/360,0.8,0.8);
+  visColors[elvcRectFill]  .setHsvF(240.0/360,0.2,1.0);
+  visColors[elvcPermSelect].setHsvF(220.0/360,0.3,0.9);
 //
   QPixmap blank("buttons/empty1.png");
   QRect colorBlock(5,5,11,11);
@@ -43,12 +46,9 @@ void elVista::initColors(void)
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 elVista::elVista (jdlvFrame *father, elMundo *lookingAtWorld)
                        : dad(father),   world(lookingAtWorld),
-                         pt(0), pixmap(NULL), isMoving(false)
+     pt(0), pixmap(NULL), isMoving(false), isSelecting(false)
 { 
   setAttribute(Qt::WA_OpaquePaintEvent);
-//+  setAttribute(Qt::WA_PaintOnScreen);
-//   setAttribute(Qt::WA_NoSystemBackground);
-
   mag = pixels_per_cell = cells_per_pixel = 1;
   xOffset = yOffset = 0;
   x_center = y_center = 0;
@@ -87,17 +87,20 @@ void elVista::show_next_gen (elMundo *orig) // if orig == NULL, 'world' is used
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::makePixmap (int xmin, int ymin, int w, int h)
 {
-//+
-//fprintf(stderr, "pixmap:x=%d,y=%d,%dx%d,mag=%d\n", xmin, ymin, w, h, mag);
-//-
-  QRect rect = this->rect();  if (pixmap) delete pixmap;
-  pixmap = new QPixmap(rect.size());
-  world->setFrame(xmin, xmin+w-1, ymin, ymin+h-1);
-  QPainter dc(pixmap);                                  dc.setPen(Qt::NoPen);
-  QBrush B(visColors[elvcBackground],Qt::SolidPattern); dc.setBrush(B);
-  dc.drawRect(rect);
+  world->setFrame(xmin, xmin+w-1, ymin, ymin+h-1); // sets vis/abs conversion
+  QRect rect = this->rect();
+  if (pixmap) delete pixmap; pixmap = new QPixmap(rect.size());
+  QPainter dc(pixmap);
+  QBrush  brush (visColors[elvcBackground], Qt::SolidPattern);
+  dc.setBrush(brush); dc.setPen(Qt::NoPen); dc.drawRect(rect);
+  QRect selection;
+  if (!absSelection.isEmpty()) {
+    selection = rectAbs2vis(absSelection);
+    brush = QBrush(visColors[elvcPermSelect], Qt::SolidPattern);
+    dc.setBrush(brush);                  dc.drawRect(selection);
+  }
   if (pixels_per_cell > 7) {
-    dc.setPen(QPen(QColor(visColors[elvcGrid])));
+    dc.setPen(QPen( QColor(visColors[elvcGrid]) ));
     int i, p;
     for (i = world->XvMin; i <= world->XvMax+1; i++) {
       p = Xabs2vis(i)-1;
@@ -106,7 +109,14 @@ void elVista::makePixmap (int xmin, int ymin, int w, int h)
     for (i = world->YvMin; i <= world->YvMax+1; i++) {
       p = Yabs2vis(i)-1;
       dc.drawLine(rect.left(), p, rect.right(), p);
-  } }                                                 pt = &dc;
+  } }
+  if (!selection.isEmpty()) {
+    QPen pen(QColor(visColors[elvcRectBorder]),2); dc.setBrush(Qt::NoBrush);
+    dc.setPen(pen);
+         if (pixels_per_cell  > 7) selection.adjust(-2,-2,+1,+1);
+    else if (pixels_per_cell == 5) selection.adjust(-1,-1, 0, 0);
+    dc.drawRect(selection);
+  }                                                   pt = &dc;
   world->show(*this, xmin, xmin+w-1, ymin, ymin+h-1); pt = NULL;
   dad->UpdateMag();
   timeInfo.clear();
@@ -127,6 +137,27 @@ int elVista::Xabs2vis (int x_abs)
 int elVista::Yabs2vis (int y_abs)
 { 
   return pixels_per_cell*(y_abs - world->YvMin)/cells_per_pixel + yOffset;
+}
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+QRect elVista::rectAbs2vis (QRect abs)
+{
+  return QRect(QPoint(Xabs2vis(abs.left() )  , Yabs2vis(abs.top()   )  ),
+               QPoint(Xabs2vis(abs.right())-1, Yabs2vis(abs.bottom())-1) );
+}
+QRect elVista::rectVis2abs (QRect visRect)
+{
+  return QRect(QPoint(Xvis2abs(visRect.left() + pixels_per_cell - 1),
+                      Yvis2abs(visRect.top()  + pixels_per_cell - 1)      ),
+               QPoint(Xvis2abs(visRect.right()), Yvis2abs(visRect.bottom()) ));
+}
+QRect elVista::rectFrom2points(QPoint a, QPoint b)
+{
+  int xmin, xmax, ymin, ymax;
+  if (a.x() < b.x()) { xmin = a.x(); xmax = b.x(); }
+  else               { xmin = b.x(); xmax = a.x(); }
+  if (a.y() < b.y()) { ymin = a.y(); ymax = b.y(); }
+  else               { ymin = b.y(); ymax = a.y(); }
+  return QRect(QPoint(xmin,ymin), QPoint(xmax,ymax));
 }
 //-----------------------------------------------------------------------------
 static int magnifications[] = { -64, -32, -16, -8, -4, -2, -1,
@@ -207,7 +238,12 @@ void elVista::paintEvent (QPaintEvent*)
 {
   QPainter dc(this);       dc.drawPixmap        (0,0,*pixmap);
   if (!timeInfo.isEmpty()) dc.drawText(2,height()-2,timeInfo);
-}
+  if (!visPreSelect.isEmpty()) {
+    QBrush B(visColors[elvcRectFill], Qt::SolidPattern); dc.setBrush(B);
+    QPen pen(visColors[elvcRectBorder], 1.0);            dc.setPen(pen);
+    dc.setOpacity(0.5);
+    dc.drawRect(visPreSelect);
+} }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::mousePressEvent (QMouseEvent *ev)
 {
@@ -215,10 +251,27 @@ void elVista::mousePressEvent (QMouseEvent *ev)
   case QEvent::MouseButtonPress:
     cpLast = QPoint(x_center, y_center);
     mpLast = ev->pos();
-    if (dad->changesAllowed()) {
+#ifdef Q_OS_MAC                          // On Mac Qt always reports:
+    if (ev->button() == Qt::RightButton) //   Ctrl+LeftButton == RightButton
+#else                                    // make it the same on other platforms
+    if (ev->button() == Qt::RightButton ||
+       (ev->modifiers() & Qt::ControlModifier))
+#endif
+    { QRect vis = rectAbs2vis(absSelection);
+      if (!absSelection.isEmpty() && vis.contains(ev->pos())) {
+        if (ev->x() < vis.x() + vis.width()/2)   mpLast.setX(vis.right() +1);
+        else                                     mpLast.setX(vis.left()    );
+        if (ev->y() < vis.y() + vis.height()/2)  mpLast.setY(vis.bottom()+1);
+        else                                     mpLast.setY(vis.top()     );
+        visPreSelect = rectFrom2points(ev->pos(),mpLast);
+      }
+      absSelection.setSize(QSize(0,0)); updateTheWorld();
+      isSelecting = true;     setCursor(Qt::CrossCursor);
+    }
+    else if (dad->changesAllowed()) {
       int absX = Xvis2abs(ev->x()),
           absY = Yvis2abs(ev->y());
-      if (ev-> modifiers() & Qt::ShiftModifier)
+      if (ev->modifiers() & Qt::ShiftModifier)
                 world->toggle (absX, absY, dad->getCurrentColor());
       else if (!world->recolor(absX, absY, dad->getCurrentColor())) break;
       ev->accept();
@@ -234,27 +287,32 @@ void elVista::mousePressEvent (QMouseEvent *ev)
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::mouseMoveEvent (QMouseEvent *ev)
 {
-  x_center = cpLast.x() + cells_per_pixel*(mpLast.x()-ev->x())/pixels_per_cell;
-  y_center = cpLast.y() + cells_per_pixel*(mpLast.y()-ev->y())/pixels_per_cell;
-  ev->accept();
-  if (! isMoving) setCursor(Qt::ClosedHandCursor);
-        isMoving = true;         updateTheWorld();
-}
+  if (isSelecting) { visPreSelect = rectFrom2points(mpLast, ev->pos());
+                                                              update(); }
+  else {
+    x_center = cpLast.x()+cells_per_pixel*(mpLast.x()-ev->x())/pixels_per_cell;
+    y_center = cpLast.y()+cells_per_pixel*(mpLast.y()-ev->y())/pixels_per_cell;
+    ev->accept();
+    if (! isMoving) setCursor(Qt::ClosedHandCursor);
+          isMoving = true;         updateTheWorld();
+} }
 void elVista::mouseReleaseEvent (QMouseEvent*)
 {
-  if (isMoving) unsetCursor(); isMoving = false;
-}
+  if (isMoving)      unsetCursor(); isMoving    = false;
+  if (isSelecting) { unsetCursor(); isSelecting = false;
+    absSelection = rectVis2abs(visPreSelect);
+    updateTheWorld();
+    visPreSelect.setSize(QSize(0,0));
+} }
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void elVista::wheelEvent (QWheelEvent *ev)
 {
-  if (ev->modifiers() & (Qt::MetaModifier|Qt::ControlModifier)) {
-    resizeVista(ev->delta() > 0 ? +1 : -1, ev->x(), ev->y());
-    update();
-  }
+  if (ev->modifiers() & (Qt::ALT|Qt::META|Qt::CTRL))
+       { resizeVista(ev->delta() > 0 ? +1 : -1, ev->x(), ev->y()); update(); }
   else {
     int delta = ev->delta()/2;
-    if (ev->orientation() == Qt::Vertical)
-         y_center = Yvis2abs(Yabs2vis(y_center)-delta);
-    else x_center = Xvis2abs(Xabs2vis(x_center)-delta); updateTheWorld();
+    if ((ev->modifiers() & Qt::SHIFT) || ev->orientation() == Qt::Horizontal)
+         x_center = Xvis2abs(Xabs2vis(x_center)-delta);
+    else y_center = Yvis2abs(Yabs2vis(y_center)-delta); updateTheWorld();
 } }
 //-----------------------------------------------------------------------------

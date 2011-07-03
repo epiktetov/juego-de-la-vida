@@ -5,4 +5,6 @@ Gun44                                   (2 cells set the color)|Gun44.jdlv
 Gun22      -- shoots bi-color gliders                          |Gun22bi.jdlv
 Gun30(3QB) -- shoots bi-color gliders                          |Gun30bi.jdlv
 Gun36      -- shoots bi-color gliders                          |Gun36bi.jdlv
-                                                               |
+Osc30x8                                        (one red glider)|Osc30x8.jdlv
+Osc42                                                          |Osc42.jdlv
+Osc144x2: non-trivial double period with colors considered (RA)|Osc144x2.jdlv

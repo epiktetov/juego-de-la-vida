@@ -11,12 +11,9 @@ class elMundo;      // the world
 class elObservador; // the observer (abstract class for iterations thru world)
 class elVista;      // the view (double-inherited from QWidget & elObservador)
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
-typedef enum {
-  elModeView = 1,
-  elModeEdit = 2,
-  elModePlay = 4
-}
-elMode;
+typedef enum { elModeView = 1,
+               elModeEdit = 2,
+               elModePlay = 4  } elMode;
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 typedef enum { elcBlack   = 0, elcNegro   = 0, elcDefault   =  0,
                elcRed     = 1, elcRojo    = 1,
@@ -28,48 +25,44 @@ typedef enum { elcBlack   = 0, elcNegro   = 0, elcDefault   =  0,
 } elColor;
 /*- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -*/
 typedef enum {
-  elvcBlack   = 0, elvcOffBlack   =  8, elcvDead = 8,
-  elvcRed     = 1, elvcOffRed     =  9,
-  elvcGreen   = 2, elvcOffGreen   = 10, elvcBackground = 16,
-  elvcYellow  = 3, elvcOffYellow  = 11, elvcGrid       = 17,
-  elvcBlue    = 4, elvcOffBlue    = 12, elvcInfoText   = 18,
-  elvcMagenta = 5, elvcOffMagenta = 13,
-  elvcCyan    = 6, elvcOffCyan    = 14,
-  elvcWhite   = 7, elvcOffWhite   = 15, elvcMax = 19
-}
-elVisColor;
+  elvcBlack   = 0, elvcOffBlack   =  8, elcvDead       =  8,
+  elvcRed     = 1, elvcOffRed     =  9, elvcBackground = 16,
+  elvcGreen   = 2, elvcOffGreen   = 10, elvcGrid       = 17,
+  elvcYellow  = 3, elvcOffYellow  = 11, elvcInfoText   = 18,
+  elvcBlue    = 4, elvcOffBlue    = 12, elvcRectBorder = 19,
+  elvcMagenta = 5, elvcOffMagenta = 13, elvcRectFill   = 20,
+  elvcCyan    = 6, elvcOffCyan    = 14, elvcPermSelect = 21,
+  elvcWhite   = 7, elvcOffWhite   = 15, elvcMax        = 22  } elVisColor;
 /*---------------------------------------------------------------------------*/
 class jdlvFrame : public QMainWindow // QDialog
 {
-  Q_OBJECT                 elMundo *primeWorld, *nextWorld;
-  QString   worldFilename; elVista *vista;  bool isChanged;
+  Q_OBJECT                  elMundo *primeWorld, *nextWorld;
+  QString   worldFilename;  elVista *vista;  bool isChanged;
   int eM, genNo, curColor;
-  int speed, timerID;
-
-  QAction *openFile, *reLoad;
+  int     speed,  timerID;
   QAction *showTimeCB, *showInfoPB, *modeView, *modeEdit, *setColor,
-                                    *pasteClip, *saveBnW, *saveCLR;
-  QSlider *speedSlider;
+          *openFile, *reLoad, *deleteSelected, *cropSelected,
+                              *pasteClipboard, *copyBnW, *copyCLR, *newWin;
   QMenu *colorMenu;
-  QLabel *magText, *playGen;
-  QAction *newWin;
-  QAction  *fitView,  *prevGen, *nextGen, *playStop;
-
+  QLabel  *magText, *playGen;
+  QAction *fitView, *prevGen, *nextGen, *playStop;
+//+
+  QSlider *speedSlider;
 public slots:
+  void ToggleTime(bool on); void ShowInfo();
+  void SetModeView();
+  void SetModeEdit();
+  void PopupColorMenu(); void SelectColor(QAction *choice);
   void OpenFile();
-  void DoReload(); void ToggleTime(bool on);
-  void ShowInfo(); void PopupColorMenu(); void SelectColor(QAction *choice);
-  void PasteClip();
-  void SaveBnW();
-  void SaveCLR();
-  void NewWindow();
-
-  void SetModeView(); void DoFitView();  void ChangeSpeed(int newSpeed);
-  void SetModeEdit(); void DoPrevGen();
-                      void DoNextGen();
-                      void DoPlayStop(); void timerEvent(QTimerEvent *ev);
+  void DoReload();
+  void DeleteSelected(); void CropSelected(); void DoTermination(bool inside);
+  void PasteClipboard(); void CopyBnW();
+  void NewWindow();      void CopyCLR();
   void UpdateMag();
-
+  void DoFitView();
+  void DoPrevGen();                    void ChangeSpeed  (int newSpeed);
+  void DoNextGen(); void DoPlayStop(); void timerEvent(QTimerEvent *ev);
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 public:    jdlvFrame(const char *fileToLoad);
   virtual ~jdlvFrame() { }
   void LoadTheWorld(QString filename);

@@ -9,11 +9,11 @@
 
 class elVista : public QWidget, public elObservador
 {
-  jdlvFrame  *dad; // father frame
-  elMundo  *world; // the world we're observing
-  QPainter    *pt; // painter & "paint next gen" flag
-  QPixmap *pixmap;
-  QString timeInfo;
+  jdlvFrame   *dad; // father frame
+  elMundo   *world; // the world we're observing
+  QPainter     *pt; // painter used to draw on pixmap, used by observe()
+  QPixmap  *pixmap; // how the wolrd looks (effectively triple buffering)
+  QString timeInfo; // time info string to show in the corner
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 public:    elVista(jdlvFrame *padre, elMundo *mirandoAlMundo);
   virtual ~elVista();
@@ -47,7 +47,15 @@ protected:
   void mousePressEvent  (QMouseEvent *ev); QPoint mpLast; // mouse press (vis)
   void mouseMoveEvent   (QMouseEvent *ev); QPoint cpLast; // last center (abs)
   void mouseReleaseEvent(QMouseEvent *ev); bool isMoving;
-  void wheelEvent       (QWheelEvent *ev);
+  void wheelEvent       (QWheelEvent *ev); bool isSelecting;
+         QRect rectAbs2vis         (QRect visRect);
+         QRect rectVis2abs         (QRect visRect);
+  static QRect rectFrom2points(QPoint a, QPoint b);
+public:
+  QRect getSelection(void) const { return  absSelection; }
+protected:
+  QRect visPreSelect; // selection in process (right-dragging), vista coords
+  QRect absSelection; // block has been selected, absolute (world) coordinates
 };
 extern QIcon *enBlancoIco, *enRojoIco, *enCastanoIco, *enVerdeIco, *enAzulIco;
 /*---------------------------------------------------------------------------*/

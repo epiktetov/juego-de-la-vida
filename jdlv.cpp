@@ -100,17 +100,16 @@ jdlvFrame::jdlvFrame (const char *fileToLoad) : nextWorld(NULL),
   bottom->addWidget(new QLabel(" "));
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   QActionGroup *modeGroup = new QActionGroup(this);
-  modeView = new QAction(QIcon(":/eye-half.png"),  QString("View"),  this);
-  modeEdit = new QAction(QIcon(":/pen-in-box.png"),QString("Edit"),  this);
-  setColor = new QAction(QIcon(":/empty1.png"),    QString("color"), this);
+  modeEdit = new QAction(QIcon(":/pen-in-box.png"),QString("Edit (X)"),  this);
+  modeView = new QAction(QIcon(":/eye-half.png"),  QString("View (Z)"),  this);
+  setColor = new QAction(QIcon(":/empty1.png"),    QString("color"),     this);
   connect(modeView, SIGNAL(triggered()), this, SLOT(SetModeView()));
   connect(modeEdit, SIGNAL(triggered()), this, SLOT(SetModeEdit()));
   connect(setColor, SIGNAL(triggered()), this, SLOT(PopupColorMenu()));
   showTimeCB->setCheckable(true);
-  modeView  ->setCheckable(true); modeView ->setChecked(true);
-  modeEdit  ->setCheckable(true);
-  modeView->setShortcut(QKeySequence("F1"));
-  modeEdit->setShortcut(QKeySequence("F2"));
+  modeEdit  ->setCheckable(true); modeEdit->setShortcut(QKeySequence("X"));
+  modeView  ->setCheckable(true); modeView->setShortcut(QKeySequence("Z"));
+  modeView  ->setChecked  (true);
   modeGroup->addAction(modeView); bottom->addAction(modeView);
   modeGroup->addAction(modeEdit); bottom->addAction(modeEdit);
                                   bottom->addAction(setColor);
@@ -124,30 +123,37 @@ jdlvFrame::jdlvFrame (const char *fileToLoad) : nextWorld(NULL),
   file_menu->addAction(reLoad);        reLoad->setEnabled(false);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   QMenu *edit_menu = menuBar()->addMenu("Edit");
-  pasteClip = new QAction(QIcon(":/win-paste.png"), QString("paste"),    this);
-  saveCLR = new QAction(QIcon(":/export-blue.png"), QString("save"),     this);
-  saveBnW = new QAction(QIcon(":/export-mono.png"), QString("save b/w"), this);
+  deleteSelected = new QAction(QString("delete"), this);
+  deleteSelected->setShortcut(QKeySequence("Del"));
+  cropSelected   = new QAction(QString("crop"), this);
+  pasteClipboard =
+            new QAction(QIcon(":/win-paste.png"),   QString("paste"),    this);
+  copyCLR = new QAction(QIcon(":/export-blue.png"), QString("copy"),     this);
+  copyBnW = new QAction(QIcon(":/export-mono.png"), QString("copy b/w"), this);
   newWin = new QAction(QIcon(":/windows1.png"),   QString("new window"), this);
-  bottom->addAction(pasteClip);     pasteClip->setEnabled(false); //+
-  bottom->addAction(saveCLR);
-  bottom->addAction(saveBnW);
+  bottom->addAction(pasteClipboard);     pasteClipboard->setEnabled(false); //+
+  bottom->addAction(copyCLR); copyCLR->setShortcut(QKeySequence("Ctrl+C"));
+  bottom->addAction(copyBnW);
   bottom->addAction(newWin);       newWin->setEnabled(false); //+
-  connect(pasteClip, SIGNAL(triggered()), this, SLOT(PasteClip()));
-  connect(saveCLR, SIGNAL(triggered()), this, SLOT(SaveCLR()));
-  connect(saveBnW, SIGNAL(triggered()), this, SLOT(SaveBnW()));
+  connect(deleteSelected, SIGNAL(triggered()), this, SLOT(DeleteSelected()));
+  connect(  cropSelected, SIGNAL(triggered()), this, SLOT(  CropSelected()));
+  connect(pasteClipboard, SIGNAL(triggered()), this, SLOT(PasteClipboard()));
+  connect(copyCLR, SIGNAL(triggered()), this, SLOT(CopyCLR()));
+  connect(copyBnW, SIGNAL(triggered()), this, SLOT(CopyBnW()));
   connect(newWin, SIGNAL(triggered()), this, SLOT(NewWindow()));
-  edit_menu->addAction(pasteClip);
-  edit_menu->addAction(saveCLR);
-  edit_menu->addAction(saveBnW);
+  edit_menu->addAction(deleteSelected);
+  edit_menu->addAction(  cropSelected); edit_menu->addSeparator();
+  edit_menu->addAction(pasteClipboard); edit_menu->addAction(copyCLR);
+                                        edit_menu->addAction(copyBnW);
   //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
   colorMenu = menuBar()->addMenu("Color");
 #define ADD_colorMenu(ico,text,shortcut) \
   colorMenu->addAction(*ico,text)->setShortcut(QKeySequence(shortcut))
-  ADD_colorMenu(enBlancoIco,            "blanco",     "b");
-  ADD_colorMenu(enRojoIco,              "rojo (red)", "r");
-  ADD_colorMenu(enCastanoIco, Utf8("castaño (brown)"),"c");
-  ADD_colorMenu(enVerdeIco,          "verde (green)", "v");
-  ADD_colorMenu(enAzulIco,             "azul (blue)", "a");
+  ADD_colorMenu(enBlancoIco,            "blanco",     "B");
+  ADD_colorMenu(enRojoIco,              "rojo (red)", "R");
+  ADD_colorMenu(enCastanoIco, Utf8("castaño (brown)"),"C");
+  ADD_colorMenu(enVerdeIco,          "verde (green)", "V");
+  ADD_colorMenu(enAzulIco,             "azul (blue)", "A");
   colorMenu->addSeparator();
   colorMenu->addAction("random Bicolor")->setShortcut(QKeySequence("Ctrl+B"));
   colorMenu->addAction("random Recolor")->setShortcut(QKeySequence("Ctrl+R"));
@@ -187,7 +193,6 @@ jdlvFrame::jdlvFrame (const char *fileToLoad) : nextWorld(NULL),
   speedSlider->setTickPosition(QSlider::TicksBelow);
   connect(speedSlider, SIGNAL(valueChanged(int)), this, SLOT(ChangeSpeed(int)));
   bottom->addWidget(playGen);
-  bottom->addAction(prevGen);
   bottom->addAction(nextGen);
   bottom->addWidget(speedSlider);
   bottom->addAction(playStop);
@@ -219,25 +224,18 @@ void jdlvFrame::SetWinTitle()
   setWindowTitle(title);
 }
 //-----------------------------------------------------------------------------
-void jdlvFrame::OpenFile()
-{
-  QString name = QFileDialog::getOpenFileName(this, "Open", worldFilename);
-  if (!name.isEmpty()) { LoadTheWorld(worldFilename = name);
-                                              SetWinTitle(); }
-}
-void jdlvFrame::DoReload()
-{
-  if (!worldFilename.isEmpty()) LoadTheWorld(worldFilename);
-}
-void jdlvFrame::notifyOfChange(void)
-{
-  if (!isChanged) reLoad->setEnabled(true); isChanged = true;
-}
-//-----------------------------------------------------------------------------
 void jdlvFrame::ToggleTime(bool on) { if (!on) vista->show_time_info(""); }
 void jdlvFrame::ShowInfo() {}
-void jdlvFrame::SetModeView() { eM = (eM & elModePlay) | elModeView; }
-void jdlvFrame::SetModeEdit() { eM = (eM & elModePlay) | elModeEdit; }
+void jdlvFrame::SetModeView()
+{
+  if (eM == elModePlay) DoPlayStop(); eM = elModeView;
+}
+void jdlvFrame::SetModeEdit()
+{
+  if (eM == elModePlay) DoPlayStop();
+                        DoPrevGen();
+  eM = elModeEdit;
+}
 //- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void jdlvFrame::SelectColor (QAction *act) // called from menu action
 {                                          //
@@ -246,43 +244,93 @@ void jdlvFrame::SelectColor (QAction *act) // called from menu action
     primeWorld->changeTheWorld(rc);
          vista->updateTheWorld  (); notifyOfChange();
   }
-  else { switch (act->text().at(0).unicode()) {
-    case 'b': curColor = elcDefault; break; // -- "blanco"
-    case 'r': curColor = elcRojo;    break;
-    case 'v': curColor = elcVerde;   break;
-    case 'a': curColor = elcAzul;    break;
-    case 'x': curColor = elcCianico; break;
-    case 'c': curColor = elcCastano; break;
-    case 'z': curColor = elcMagenta; break;
+  else { char cl = act->text().at(0).unicode();
+    switch (cl) {
+    case 'b': curColor = elcDefault; cl = 'o'; break; // -- "blanco"
+    case 'r': curColor = elcRojo;              break;
+    case 'v': curColor = elcVerde;             break;
+    case 'a': curColor = elcAzul;              break;
+    case 'x': curColor = elcCianico;           break;
+    case 'c': curColor = elcCastano;           break;
+    case 'z': curColor = elcMagenta;           break;
     case 'U':
       { elRecolorator uc("ooooooo"); // everything -> default color ("blanco")
         primeWorld->changeTheWorld(uc);
              vista->updateTheWorld  (); notifyOfChange(); return; }
     }
-    setColor->setIcon(act->icon());
-} }
+    setColor->setIcon (act->icon());
+    QRect S = vista->getSelection();
+    if (eM == elModeEdit && !S.isEmpty()) {   QString rule(elcMax, QChar(cl));
+      elRecolorator rc(rule.cStr(), S.left(), S.right(), S.top(), S.bottom());
+      primeWorld->changeTheWorld(rc);
+           vista->updateTheWorld  (); notifyOfChange();
+} } }
 void jdlvFrame::PopupColorMenu() { colorMenu->popup(QCursor::pos()); }
-//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-void jdlvFrame::UpdateMag() { QString S; S.sprintf("%+3d",vista->get_mag());
-                                                        magText->setText(S); }
-void jdlvFrame::PasteClip() {}
-void jdlvFrame::SaveBnW()
+//-----------------------------------------------------------------------------
+void jdlvFrame::OpenFile()
 {
-  elSalvador saver(*primeWorld);
-  saver.save(false);
+  QString name = QFileDialog::getOpenFileName(this, "Open", worldFilename);
+  if (!name.isEmpty()) { LoadTheWorld(worldFilename = name); SetWinTitle(); }
 }
-void jdlvFrame::SaveCLR()
+void jdlvFrame::DoReload() { if (!worldFilename.isEmpty())
+                                               LoadTheWorld(worldFilename); }
+void jdlvFrame::notifyOfChange (void)
 {
-  elSalvador saver(*primeWorld);
-  saver.save(true);
+  if (!isChanged) reLoad->setEnabled(true); isChanged = true;
+}
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void jdlvFrame::DoTermination(bool inside)
+{
+  QRect S = vista->getSelection();
+  if (!S.isEmpty()) {
+    elTerminator tm(inside, S.left(), S.right(), S.top(), S.bottom());
+    primeWorld->changeTheWorld(tm);
+         vista->updateTheWorld  (); notifyOfChange();
+} }
+void jdlvFrame::DeleteSelected() { DoTermination(true);  }
+void jdlvFrame::CropSelected  () { DoTermination(false); }
+//-----------------------------------------------------------------------------
+class ClipSaver : public elSalvador
+{
+  static QClipboard  *theClipboard;
+  static QClipboard::Mode clipMode; QString clipContents;
+public:
+  ClipSaver (elMundo& mundoParaSalvar) : elSalvador(mundoParaSalvar)
+  {
+    if (!theClipboard) { theClipboard = QApplication::clipboard();
+      clipMode = theClipboard->supportsSelection() ? QClipboard::Selection
+                                                   : QClipboard::Clipboard;
+  } }
+  virtual void flush (QString line) { clipContents += line + "\n"; }
+  virtual ~ClipSaver() {
+    if (!clipContents.isEmpty()) theClipboard->setText(clipContents, clipMode);
+  }
+};
+QClipboard *ClipSaver::theClipboard = NULL;
+QClipboard::Mode ClipSaver::clipMode;
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+void jdlvFrame::PasteClipboard() { }
+void jdlvFrame::CopyBnW()
+{
+  elMundo *world = (genNo && nextWorld) ? nextWorld : primeWorld;
+  ClipSaver saver(*world);                     saver.save(false);
+}
+void jdlvFrame::CopyCLR()
+{
+  elMundo *world = (genNo && nextWorld) ? nextWorld : primeWorld;
+  ClipSaver saver(*world);                      saver.save(true);
 }
 void jdlvFrame::NewWindow() { }
+//- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 void jdlvFrame::DoFitView() { vista->resize_to_fit(); }
+void jdlvFrame::UpdateMag() { QString S; S.sprintf("%+3d",vista->get_mag());
+                                                        magText->setText(S); }
 //-----------------------------------------------------------------------------
 void jdlvFrame::PreparePlay()
 {
   if (genNo && nextWorld) return;
   else {
+    if (eM == elModeEdit) modeView->setChecked(true); eM = elModeView;
     if (nextWorld) nextWorld->clearTheWorld();
     else           nextWorld = new_elMundoA(); vista->lookAtThis(nextWorld);
     prevGen->setEnabled(true);
@@ -300,11 +348,11 @@ int speed2msec[] = { -1, 600, 150, 30, 0 };
 quint64 lastTick;
 void jdlvFrame::DoPlayStop()
 {
-  if (eM & elModePlay) {
-    eM &= ~elModePlay;          killTimer(timerID);
+  if (eM == elModePlay) {
+      eM =  elModeView;         killTimer(timerID);
     playStop->setIcon(QIcon(":/fast-forward.png")); playStop->setText("go!");
   }
-  else {  PreparePlay(); eM |= elModePlay;
+  else {  PreparePlay(); eM = elModePlay;
     lastTick = pgtime();
     timerID = startTimer(speed2msec[speed]);
     playStop->setIcon (QIcon(":/step.png")); playStop->setText("stop");
