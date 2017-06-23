@@ -1,8 +1,12 @@
 //------------------------------------------------------+----------------------
-// juego de la vida      Startup and main controls      | (c) Epi MG, 2002,2011
+// juego de la vida      Startup and main controls      | (c) Epi MG, 2002-2017
 //------------------------------------------------------+----------------------
 #include <QApplication>
+#include <QFileDialog>
 #include <QtGui>
+#include <QMenuBar>
+#include <QToolBar>
+#include <QProxyStyle>
 #include "jdlv.h"
 #include "elmundo.h" /* class elMundo, elObservador */
 #include "elvista.h" /* class elVista               */
@@ -368,7 +372,9 @@ void jdlvFrame::timerEvent(QTimerEvent *)
   elMundo *origWorld = genNo ? nextWorld : primeWorld;
   quint64 tick_time = pgtime(); vista->show_next_gen(origWorld); genNo++;
   quint64 stop_time = pgtime();
+#ifdef Q_OS_LINUX
   QApplication::syncX(); // only for X11 (does nothing on other platforms)
+#endif
   QString S = QString::number(genNo);
   if (S.length() > 3) S.insert(-3,',');
   if (S.length() > 7) S.insert(-7,','); playGen->setText(S);

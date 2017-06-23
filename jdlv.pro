@@ -11,7 +11,10 @@ CONFIG += debug
 #^keep until version 1.0
 OBJECTS_DIR = obj
 RESOURCES = jdlv.qrc
-
+# - - - - - - - - - - - - - - - -
+greaterThan(QT_MAJOR_VERSION,4) {
+  QT += widgets
+}
 unix: QtPLATF = unix
 macx: QtPLATF = macx
 win32:QtPLATF = win32

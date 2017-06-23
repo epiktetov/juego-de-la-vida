@@ -1,12 +1,14 @@
 //------------------------------------------------------+----------------------
-// juego de la vida      Самый главный header файл      | (c) Epi MG, 2002,2011
+// juego de la vida      Самый главный header файл      | (c) Epi MG, 2002-2017
 //------------------------------------------------------+----------------------
 #ifndef JDLV_H_INCLUDED // Viewer/editor/etc for Conway's Game of Life (+color)
 #define JDLV_H_INCLUDED // by Michael Epiktetov (М.Г.Эпиктетов), epi@ieee.org
 #include <stdlib.h>
+#include <QAction>
+#include <QLabel>
+#include <QMenu>
 #include <QMainWindow>
-class QLabel;
-class QSlider;
+#include <QSlider>
 class elMundo;      // the world
 class elObservador; // the observer (abstract class for iterations thru world)
 class elVista;      // the view (double-inherited from QWidget & elObservador)
